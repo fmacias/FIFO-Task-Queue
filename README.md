@@ -83,7 +83,7 @@ queue.Run(() =>
 {
 	secondTaskfinished = true;
 });
-queue.Run((dummyObject) =>
+queue.Run(() =>
 {
 	thirdTaskStarted = false;
 });
@@ -142,6 +142,34 @@ Task 36 observation completed. Task Must be finished. Status:Canceled
 Task 38 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
+
+```[C#]
+## Share the same object into each task. It could als be a GUI-Control, for example.
+
+In this example I also comment the invokation to the Complete() Method,
+which starts the completation of each TaskObserver, to show that it's recommendable
+but not neccessary.
+
+object[] objectRerenceToShare = new object[3];
+FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
+queue.Run((sharedObject) =>
+{
+	((object[])sharedObject)[0] = "a";
+}, objectRerenceToShare);
+//
+//bool done = await queue.Complete();
+queue.Run((sharedObject) =>
+{
+	((object[])sharedObject)[1] = "b";
+}, objectRerenceToShare);
+//bool done = await queue.Complete();
+queue.Run((sharedObject) =>
+{
+	((object[])sharedObject)[2] = "c";
+}, objectRerenceToShare);
+//bool done = await queue.Complete();
+queue.Dispose();
+```
 
 [Checkout for more examples at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
