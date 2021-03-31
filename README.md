@@ -146,8 +146,11 @@ All Queued Tasks have already been finalized!
 ## Share the same object into each task. It could als be a GUI-Control, for example.
 ```[C#]
 In this example I also comment the invokation to the Complete() Method,
-which starts the completation of each TaskObserver, to show that it's recommendable
-but not neccessary.
+which starts the completation of each TaskObserver between others, to show that it
+can be invoked many times but it is not neccesary.
+
+On disposing, each instance of TaskObsever will finished and the tasks will
+be disposed.
 
 object[] objectRerenceToShare = new object[3];
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
@@ -166,6 +169,7 @@ queue.Run((sharedObject) =>
 {
 	((object[])sharedObject)[2] = "c";
 }, objectRerenceToShare);
+//
 //bool done = await queue.Complete();
 queue.Dispose();
 ```
