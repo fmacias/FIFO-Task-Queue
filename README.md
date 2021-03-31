@@ -144,3 +144,5 @@ All Queued Tasks have already been finalized!
 ~~~
 
 [Checkout for more examples at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
+
+> I am currently looking for a new Project. Please don't hesitate to contact me at fmaciasruano@gmail.com
