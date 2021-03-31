@@ -64,7 +64,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\sheduler\FifoTaskQueue.csproj">
+    <ProjectReference Include="..\FifoTaskQueue\FifoTaskQueue.csproj">
       <Project>{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}</Project>
       <Name>FifoTaskQueue</Name>
     </ProjectReference>
