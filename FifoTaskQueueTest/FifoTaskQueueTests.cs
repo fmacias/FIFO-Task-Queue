@@ -132,7 +132,7 @@ namespace fmacias.Tests
             FifoTaskQueue queue = CreateTaskQueue();
             queue.Run(() =>
             {
-                Task.Delay(100000000,queue.CancellationToken).Wait();
+                Task.Delay(5000).Wait();
             });
             queue.Run(() =>
             {

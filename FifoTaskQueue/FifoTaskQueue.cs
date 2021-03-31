@@ -302,8 +302,7 @@ namespace fmacias
             {
                 if (tasksProvider.ObserverSubscritionExist())
                 {
-                    CancelExecution();
-                    Task<bool> completed = Complete();
+                    Task<bool> completed = Complete(MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS);
                     completed.Wait();
                 }
                 if (tasksProvider.ObserverSubscritionExist())
