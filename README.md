@@ -8,7 +8,7 @@ The primary goal of this component is to allow asynchronous tasks sequentially.
 It also observes the status of the processing Task for a tracking overview and
 supports task cancellation explicitly or after a given elapsed time.
 Once a task has been cancelled of failed, these subordinated tasks will be
-canceled before starting setting the TaskStatus of each task properly.
+canceled before starting properly.
 
 # You will find
 
