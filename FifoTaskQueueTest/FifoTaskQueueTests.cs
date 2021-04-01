@@ -23,6 +23,7 @@ namespace fmacias.Tests
     public class FifoTaskQueueTests
     {
         const bool EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION = true;
+        private bool abortDownload = false;
         private FifoTaskQueue CreateTaskQueue()
         {
             return FifoTaskQueue.Create(TaskShedulerWraper.Create().FromCurrentWorker(), 
@@ -213,9 +214,13 @@ namespace fmacias.Tests
                 Assert.IsTrue(downloaded1 == false && downloaded2 == false);
             });
             bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            //wait for download finalization at async methods.
+            Task.Delay(4500).Wait();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "all task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "all task completed");
             Assert.IsTrue(queue.Tasks[2].IsCompleted, "all task completed");
+            Assert.IsTrue(downloaded1, "First Async. Task performed.");
+            Assert.IsTrue(downloaded2, "Second Async. Task performed.");
             queue.Dispose();
         }
         [Test()]
@@ -368,7 +373,7 @@ namespace fmacias.Tests
         }
         public async Task<bool> Download(int miliseconds)
         {
-            await Task.Delay(miliseconds); //1 seconds delay
+            await Task.Delay(miliseconds);
             return true; ;
         }
     }
