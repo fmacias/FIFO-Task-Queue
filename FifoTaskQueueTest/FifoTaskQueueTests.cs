@@ -188,7 +188,7 @@ namespace fmacias.Tests
         /// Each run will be runned secuentially, but as previous ones are async and take longer, will be finished later.
         /// </summary>
         [Test()]
-        public async Task Run_InvokeAsyncMethodTest()
+        public async Task Run_DownloadAsyncTest()
         {
             FifoTaskQueue queue = CreateTaskQueue();
             bool downloaded1 = false;
@@ -369,6 +369,44 @@ namespace fmacias.Tests
             Assert.IsTrue(queue.Tasks[1].IsCanceled, "second Task completed");
             Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last two completed");
             queue.ClearUpTasks();
+            queue.Dispose();
+        }
+        [Test()]
+        public async Task Run_DownloadSyncTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool downloaded1 = false;
+            bool downloaded2 = false;
+            queue.Run(() =>
+            {
+
+                using (Task<bool> downloading = Download(1000))
+                {
+                    downloading.Wait();
+                    downloaded1 = downloading.Result;
+                }
+                Assert.IsTrue(downloaded1, "First async action performed.");
+            });
+            queue.Run(() =>
+            {
+                using (Task<bool> downloading = Download(1000))
+                {
+                    downloading.Wait();
+                    downloaded2 = downloading.Result;
+                }
+                Assert.IsTrue(downloaded2, "Second async action performed.");
+            });
+            queue.Run(() =>
+            {
+                Assert.IsTrue(downloaded1 == true && downloaded2 == true);
+            });
+            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            //wait for download finalization at async methods.
+            Assert.IsTrue(queue.Tasks[0].IsCompleted, "all task completed");
+            Assert.IsTrue(queue.Tasks[1].IsCompleted, "all task completed");
+            Assert.IsTrue(queue.Tasks[2].IsCompleted, "all task completed");
+            Assert.IsTrue(downloaded1, "First Async. Task performed.");
+            Assert.IsTrue(downloaded2, "Second Async. Task performed.");
             queue.Dispose();
         }
         public async Task<bool> Download(int miliseconds)
