@@ -204,10 +204,12 @@ namespace fmacias
         /// <summary>
         /// Manages the observation of tasks for these completation,  so that  
         /// not needed resources(Tasks, Observers and CancelaTionToken) are being 
-        /// cleaned at execution time.
+        /// cleaned at execution time for a better performance.
         /// 
-        /// It also provides a way to cancel the queue if the currently running Task takes longer than the time
-        /// given at <paramref name="taskCancelationTime"/>
+        /// You can run this method whenever you want and so many times you want. 
+        /// For example after each <see cref="Run(Action)"/> or 
+        /// <see cref="Run(Action{object}, object)"/>, or after the ones that takes too long.
+        /// 
         /// 
         /// Explanation:
         /// -------------------------------------------------------------------------------------------------
@@ -227,12 +229,10 @@ namespace fmacias
         /// </summary>
         /// <param name="taskCancelationTime"></param>
         /// <returns></returns>
-        public async Task<bool> Complete(int taskCancelationTime = 0)
+        public async Task<bool> ObserveCompletation()
         {
             try
             {
-                taskCancelationTime = (taskCancelationTime > 0) ? taskCancelationTime : MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
-                cancellationTokenSource.CancelAfter(taskCancelationTime);
                 return await tasksProvider.ObserversCompletation();
             }
             catch (TaskCanceledException)
@@ -247,7 +247,7 @@ namespace fmacias
             return true;
         }
         /// <summary>
-        /// It is like <see cref="Complete(int)"/> but excludes the clean up to Task after queue finalization
+        /// It is like <see cref="ObserveCompletation(int)"/> but excludes the clean up to Task after queue finalization
         /// to be able to check the task list of the queue after finalization.
         /// 
         /// A method <see cref="ClearUpTasks"/> is also provided.
@@ -255,11 +255,30 @@ namespace fmacias
         /// <param name="excludeTaskCleanUpAfterFinalization"></param>
         /// <param name="taskCancelationTime"></param>
         /// <returns></returns>
-        public async Task<bool> Complete(bool excludeTaskCleanUpAfterFinalization,  int taskCancelationTime = 0)
+        public async Task<bool> ObserveCompletation(bool excludeTaskCleanUpAfterFinalization)
         {
             this.excludeTaskCleanUpAfterFinalization = excludeTaskCleanUpAfterFinalization;
-            return await this.Complete(taskCancelationTime);
+            return await this.ObserveCompletation();
 
+        }
+        /// <summary>
+        /// Planificate one Queue cancelation after the elapsed time given at taskCancelationTime if provided
+        /// or after the default elapsed time givent at <see cref="MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS"/>.
+        /// 
+        /// Explanation
+        /// -----------
+        /// If the task takes longer, it will be abandoned. The observer will leave the obeservation but the task 
+        /// wont be removed. Whenever it happens, you should provide to this task the queue CancelationToken to be able
+        /// to cancel and bring those kind of long tasks to a default state.
+        /// 
+        /// </summary>
+        /// <param name="taskCancelationTime"></param>
+        /// <returns></returns>
+        public async Task<bool> CancelAfter(int taskCancelationTime, bool excludeTaskCleanUpAfterFinalization = false)
+        {
+            taskCancelationTime = (taskCancelationTime > 0) ? taskCancelationTime : MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
+            cancellationTokenSource.CancelAfter(taskCancelationTime);
+            return await this.ObserveCompletation(excludeTaskCleanUpAfterFinalization);
         }
         /// <summary>
         /// CancelationToken<see cref="CancellationToken"/> used to manage a cascade cancelation of running or planned tasks.
@@ -302,7 +321,7 @@ namespace fmacias
             {
                 if (tasksProvider.ObserverSubscritionExist())
                 {
-                    Task<bool> completed = Complete(MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS);
+                    Task<bool> completed = CancelAfter(MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS);
                     completed.Wait();
                 }
                 if (tasksProvider.ObserverSubscritionExist())

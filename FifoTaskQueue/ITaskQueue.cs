@@ -26,6 +26,8 @@ namespace fmacias
         CancellationToken CancellationToken { get; }
         List<Task> Tasks { get; }
         void ClearUpTasks();
-        Task<bool> Complete(int taskCancelationTime = 0);
+        Task<bool> ObserveCompletation();
+        Task<bool> ObserveCompletation(bool excludeTaskCleanUpAfterFinalization);
+        Task<bool> CancelAfter(int taskCancelationTime, bool excludeTaskCleanUpAfterFinalization = false);
     }
 }
