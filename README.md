@@ -27,7 +27,7 @@ The requires a *TaskSheduler* and a *TasksProvider*.
 The *TaskSheduler* associated with the main thread of the application
 to interact with the GUI Controls or the one associated with the worker 
 from with it was started.
-```[C#]
+```
 TaskScheduler currentWorkerSheduler = TaskShedulerWraper.Create().FromCurrentWorker();
 TaskScheduler currentGuiSheduler = TaskShedulerWraper.Create().FromGUIWorker();
 ````
