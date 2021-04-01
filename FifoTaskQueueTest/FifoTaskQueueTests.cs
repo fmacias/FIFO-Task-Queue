@@ -88,7 +88,7 @@ namespace fmacias.Tests
             bool done = await queue.Complete(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
-            Assert.IsTrue(queue.Tasks[1].IsCompleted, "third task completed");
+            Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
             queue.Dispose();
             Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
         }
@@ -147,6 +147,7 @@ namespace fmacias.Tests
                 queue.Tasks[1].IsCompleted == false &&
                 queue.Tasks[2].IsCompleted == false);
             queue.Dispose();
+            
         }
         /// <summary>
         /// Tasks were finished. So that they were cleaned up.
@@ -274,7 +275,7 @@ namespace fmacias.Tests
             bool done = await queue.Complete(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
-            Assert.IsTrue(queue.Tasks[1].IsCompleted, "third task completed");
+            Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
             Assert.AreEqual("a b c",String.Join(" ", objectRerenceToShare));
             queue.Dispose();
         }
