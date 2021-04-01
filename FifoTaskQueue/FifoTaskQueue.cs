@@ -267,9 +267,9 @@ namespace fmacias
         /// 
         /// Explanation
         /// -----------
-        /// If the task takes longer, it will be abandoned. The observer will leave the obeservation but the task 
-        /// wont be removed. Whenever it happens, you should provide to this task the queue CancelationToken to be able
-        /// to cancel and bring those kind of long tasks to a default state.
+        /// If the task takes longer, it will be abandoned. The observer will leave the obeservation of the task 
+        /// , but wont be removed. Whenever it happens, you should provide to this task the queue CancelationToken to be able
+        /// carry those kind of long tasks to a cancel or to a faulted status.
         /// 
         /// </summary>
         /// <param name="taskCancelationTime"></param>
