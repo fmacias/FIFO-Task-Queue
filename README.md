@@ -27,156 +27,268 @@ The requires a *TaskSheduler* and a *TasksProvider*.
 The *TaskSheduler* associated with the main thread of the application
 to interact with the GUI Controls or the one associated with the worker 
 from with it was started.
-```[C#]
+```csharp
 TaskScheduler currentWorkerSheduler = TaskShedulerWraper.Create().FromCurrentWorker();
 TaskScheduler currentGuiSheduler = TaskShedulerWraper.Create().FromGUIWorker();
 ````
 
 ## TasksProvider
 The provider, which is the object that sends notifications to the observed Tasks.
-```[C#]
+```csharp
 TasksProvider provider = TasksProvider.Create(new List<Task>()));
 ```
 
 ## FifoTaskQueue
-```[C#]
+```csharp
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
 ```
 # Usage
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 # Example
 ## Simple usage
-```[C#]
-FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
-queue.Run(() => { });
-queue.Run(() => { });
-queue.Run(() => { });
-bool done = await queue.Complete();
-queue.Dispose();
+```csharp
+ [Test()]
+        public async Task AllTaskRemovedAfterCompletationOfEachObservationTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            queue.Run(() => { });
+            queue.Run(() => { });
+            queue.Run(() => { });
+            bool done = await queue.ObserveCompletation();
+            Assert.IsTrue(queue.Tasks.Count() == 0);
+            queue.Dispose();
+        }
 ```
 *Ouput:*
 ~~~
-Task id: 11 Will be observe. State: Running
-Task id: 12 Will be observe. State: WaitingForActivation
-Task id: 11 initial status Running
-Task id: 11 final status RanToCompletion
-Task id: 15 Will be observe. State: WaitingForActivation
-Task id: 12 initial status Running
-Task id: 12 Status transition to RanToCompletion
-Task id: 12 final status RanToCompletion
-Task id: 15 initial status RanToCompletion
-Task id: 15 final status RanToCompletion
-Task 11 observation completed. Task Must be finished. Status:RanToCompletion 
-Task 12 observation completed. Task Must be finished. Status:RanToCompletion 
-Task 15 observation completed. Task Must be finished. Status:RanToCompletion 
+Task id: 1 Will be observe. State: RanToCompletion
+Task id: 1 initial status RanToCompletion
+Task id: 1 final status RanToCompletion
+Task id: 4 Will be observe. State: WaitingToRun
+Task id: 6 Will be observe. State: Running
+Task id: 4 initial status RanToCompletion
+Task id: 4 final status RanToCompletion
+Task id: 6 initial status RanToCompletion
+Task id: 6 final status RanToCompletion
+Task 1 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 4 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 6 observation completed. Task Must be finished. Status:RanToCompletion 
 All Queued Tasks have already been finalized!
 ~~~
 ## Cancel Task explicitly
 Using the *CancelationToken* provided by the queue.
 
-```[C#]
- FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
- queue.Run(() =>
- {
-	queue.CancelExecution();
-	Task.Delay(5000, queue.CancellationToken).Wait();
-});
-queue.Run(() =>
-{
-	secondTaskfinished = true;
-});
-queue.Run(() =>
-{
-	thirdTaskStarted = false;
-});
-bool done = await queue.Complete();
-queue.Dispose();
+Cancelation will be sent during the execution of the first task.
+As at this action, *Task.Delay(5000, queue.CancellationToken).Wait();* manages the
+queue.CancellationToken, this task will be aborted.
+
+```csharp
+ [Test()]
+        public async Task run_CancelTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool firstTaskFinished = false;
+            bool secondTaskfinished = false;
+            bool thirdTaskStarted = false;
+
+            queue.Run(() =>
+            {
+                Task.Delay(5000, queue.CancellationToken).Wait();
+                firstTaskFinished = true;
+            });
+            queue.Run((dummyObject) =>
+            {
+                secondTaskfinished = true;
+            }, new object());
+            queue.Run((dummyObject) =>
+            {
+                thirdTaskStarted = false;
+            }, new object());
+            bool done = await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
+            Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
+            Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
+            Assert.IsFalse(secondTaskfinished, "Second not finished");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
+            Assert.IsFalse(secondTaskfinished, "third task not finished");
+            queue.Dispose();
+        }
 ```
+*output*
 ~~~
-Task id: 92 Will be observe. State: Running
-Task id: 92 initial status Faulted
-Task id: 92 final status Faulted
-Task id: 94 Will be observe. State: Canceled
-Task id: 94 initial status Canceled
-Task id: 94 final status Canceled
-Task id: 96 Will be observe. State: Canceled
-Task id: 96 initial status Canceled
-Task id: 96 final status Canceled
-Task 92 observation completed. Task Must be finished. Status:Faulted 
-Task 94 observation completed. Task Must be finished. Status:Canceled 
-Task 96 observation completed. Task Must be finished. Status:Canceled 
+Task id: 2 Will be observe. State: Running
+Task id: 2 initial status Running
+Task id: 3 Will be observe. State: WaitingForActivation
+Task id: 5 Will be observe. State: WaitingForActivation
+Task id: 3 initial status WaitingForActivation
+Task id: 5 initial status WaitingForActivation
+Task id: 5 Status transition to Canceled
+Task id: 5 final status Canceled
+Task id: 3 Status transition to Canceled
+Task id: 3 final status Canceled
+Task id: 2 Status transition to Faulted
+Task id: 2 final status Faulted
+Task 2 observation completed. Task Must be finished. Status:Faulted 
+Task 3 observation completed. Task Must be finished. Status:Canceled 
+Task 5 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
 ## Cancel during execution and break method completation
-
-```[C#]
-FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
-queue.Run(() => { });
-queue.Run(() => {
-	Task.Delay(5000, queue.CancellationToken).Wait();
-});
-queue.Run(() => { });
-queue.Run(() => { });
-int elapsedTimeToCancelQueue = 2000;
-await queue.Complete(elapsedTimeToCancelQueue);
-queue.Dispose();
+Cancelation was sent during the execution of the second task but it won't be aborted
+because the action of the second task does not manage the cancelation Token of the queue,
+so that, the second task will be finished and the next ones canceled.
+```csharp
+ [Test()]
+        public async Task Complete_SecondTaskRunnedUntilTheEndTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool taskExecuted = false;
+            queue.Run(() => { });
+            queue.Run(() => {
+                Task.Delay(5000).Wait();
+                taskExecuted = true;
+            });
+            queue.Run(() => { });
+            queue.Run(() => { });
+            int elapsedTimeToCancelQueue = 2000;
+            await queue.CancelAfter(elapsedTimeToCancelQueue, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
+            Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == true, "second Task Completed and executed");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
+            queue.ClearUpTasks();
+            queue.Dispose();
+        }
 ```
 *Output*
 ~~~
-Task id: 31 Will be observe. State: WaitingToRun
-Task id: 33 Will be observe. State: WaitingForActivation
-Task id: 31 initial status Running
-Task id: 31 final status RanToCompletion
-Task id: 33 initial status Running
-Task id: 36 Will be observe. State: WaitingForActivation
-Task id: 38 Will be observe. State: WaitingForActivation
-Task id: 36 initial status WaitingForActivation
-Task id: 38 initial status WaitingForActivation
-Task id: 38 Status transition to Canceled
-Task id: 38 final status Canceled
-Task id: 33 Status transition to Faulted
-Task id: 33 final status Faulted
-Task id: 36 Status transition to Canceled
-Task id: 36 final status Canceled
-Task 31 observation completed. Task Must be finished. Status:RanToCompletion 
-Task 33 observation completed. Task Must be finished. Status:Faulted 
-Task 36 observation completed. Task Must be finished. Status:Canceled 
-Task 38 observation completed. Task Must be finished. Status:Canceled 
+Task id: 53 Will be observe. State: WaitingToRun
+Task id: 55 Will be observe. State: WaitingToRun
+Task id: 53 initial status RanToCompletion
+Task id: 53 final status RanToCompletion
+Task id: 58 Will be observe. State: WaitingForActivation
+Task id: 55 initial status Running
+Task id: 60 Will be observe. State: WaitingForActivation
+Task id: 58 initial status WaitingForActivation
+Task id: 60 initial status WaitingForActivation
+Task id: 60 Status transition to Canceled
+Task id: 58 Status transition to Canceled
+Task id: 60 final status Canceled
+Task id: 58 final status Canceled
+Task id: 55 Status transition to RanToCompletion
+Task id: 55 final status RanToCompletion
+Task 53 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 55 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 58 observation completed. Task Must be finished. Status:Canceled 
+Task 60 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
 
-## Share the same object into each task. It could als be a GUI-Control, for example.
+## Share the same object into each task. 
 
-In this example I also comment the invokation to the Complete() Method,
-which starts the completation of each TaskObserver between others, to show that it
-can be invoked many times but it is not neccesary.
+It could als be a GUI-Control, for example
 
-On disposing, each instance of TaskObsever will finished and the tasks will
-be disposed.
-```[C#]
-
-object[] objectRerenceToShare = new object[3];
-FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
-queue.Run((sharedObject) =>
-{
-	((object[])sharedObject)[0] = "a";
-}, objectRerenceToShare);
-//
-//bool done = await queue.Complete();
-queue.Run((sharedObject) =>
-{
-	((object[])sharedObject)[1] = "b";
-}, objectRerenceToShare);
-//bool done = await queue.Complete();
-queue.Run((sharedObject) =>
-{
-	((object[])sharedObject)[2] = "c";
-}, objectRerenceToShare);
-//
-//bool done = await queue.Complete();
-queue.Dispose();
+```csharp
+[Test()]
+        public async Task Run_WithParameters_ShareObject()
+        {
+            object[] objectRerenceToShare = new object[3];
+            FifoTaskQueue queue = CreateTaskQueue();
+            queue.Run((sharedObject) =>
+            {
+                ((object[])sharedObject)[0] = "a";
+                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+                    "object is the same at first iteration");
+            }, objectRerenceToShare);
+            queue.Run((sharedObject) =>
+            {
+                ((object[])sharedObject)[1] = "b";
+                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+                    "object is the same at second iteration");
+            }, objectRerenceToShare);
+            queue.Run((sharedObject) =>
+            {
+                ((object[])sharedObject)[2] = "c";
+                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+                    "object is the same at third iteration");
+            }, objectRerenceToShare);
+            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
+            Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
+            Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
+            Assert.AreEqual("a b c",String.Join(" ", objectRerenceToShare));
+            queue.Dispose();
+        }
 ```
+*Output*
+~~~
+Task id: 160 Will be observe. State: WaitingToRun
+Task id: 162 Will be observe. State: WaitingForActivation
+Task id: 160 initial status Running
+Task id: 160 Status transition to RanToCompletion
+Task id: 160 final status RanToCompletion
+Task id: 165 Will be observe. State: WaitingForActivation
+Task id: 162 initial status Running
+Task id: 162 Status transition to RanToCompletion
+Task id: 162 final status RanToCompletion
+Task id: 165 initial status RanToCompletion
+Task id: 165 final status RanToCompletion
+Task 160 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 162 observation completed. Task Must be finished. Status:RanToCompletion 
+Task 165 observation completed. Task Must be finished. Status:RanToCompletion 
+All Queued Tasks have already been finalized!
+~~~
+## Observe Tasks after each run.
 
+Where the first one will be broken
+```csharp
+ [Test()]
+        public async Task CompleteTasks_Called_After_Each_TaskTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool taskExecuted = false;
+            int elapsedTimeToCancelQueue = 2000;
+            queue.Run(() => {
+                Task.Delay(5000, queue.CancellationToken).Wait();
+            });
+            await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            queue.Run(() => { });
+            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            queue.Run(() => { });
+            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            queue.Run(() => { });
+            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task Faulted");
+            Assert.IsTrue(queue.Tasks[1].IsCanceled, "second Task completed");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last two completed");
+            queue.ClearUpTasks();
+            queue.Dispose();
+        }
+```
+*Output*
+Observing the task after each run.
+~~~
+Task id: 71 Will be observe. State: WaitingToRun
+Task id: 71 initial status Running
+Task id: 71 Status transition to Faulted
+Task id: 71 final status Faulted
+Task 71 observation completed. Task Must be finished. Status:Faulted 
+All Queued Tasks have already been finalized!
+Task id: 79 Will be observe. State: Canceled
+Task id: 79 initial status Canceled
+Task id: 79 final status Canceled
+Task 79 observation completed. Task Must be finished. Status:Canceled 
+All Queued Tasks have already been finalized!
+Task id: 85 Will be observe. State: Canceled
+Task id: 85 initial status Canceled
+Task id: 85 final status Canceled
+Task 85 observation completed. Task Must be finished. Status:Canceled 
+All Queued Tasks have already been finalized!
+Task id: 91 Will be observe. State: Canceled
+Task id: 91 initial status Canceled
+Task id: 91 final status Canceled
+Task 91 observation completed. Task Must be finished. Status:Canceled 
+All Queued Tasks have already been finalized!
+~~~
 [Checkout for more examples at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
 > I am currently looking for a new Project. Please don't hesitate to contact me at fmaciasruano@gmail.com
