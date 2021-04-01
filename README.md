@@ -34,7 +34,7 @@ TaskScheduler currentGuiSheduler = TaskShedulerWraper.Create().FromGUIWorker();
 
 ## TasksProvider
 The provider, which is the object that sends notifications to the observed Tasks.
-```[C#]
+``` [C#]
 TasksProvider provider = TasksProvider.Create(new List<Task>()));
 ```
 
