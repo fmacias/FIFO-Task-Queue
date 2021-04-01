@@ -1,9 +1,11 @@
 # FifoTaskQueue
 
-FifoTaskQueue is a FIFO task queue for .Net Framework 4.7.2. and it is able
+FifoTaskQueue is a FIFO task queue for .Net Framework. and it is able
 to interact with the GUI controlls or to process Task at the backend.
 
-The primary goal of this component is to allow asynchronous tasks sequentially.
+The primary goal of this component is to run asynchronous tasks sequentially,
+assuming that each task is subordinated to the previous ones, so that, canceling
+one, these subordinated wont be executed. 
 
 It also observes the status of the processing Task for a tracking overview and
 supports task cancellation explicitly or after a given elapsed time.
@@ -105,7 +107,7 @@ Task 94 observation completed. Task Must be finished. Status:Canceled
 Task 96 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
-## Cancel during execution and break
+## Cancel during execution and break method completation
 
 ```[C#]
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
