@@ -228,7 +228,7 @@ namespace fmacias.Tests
 
             queue.Run(() =>
             {
-                queue.CancelExecution();
+//                queue.CancelExecution();
                 Task.Delay(5000, queue.CancellationToken).Wait();
                 firstTaskFinished = true;
             });
