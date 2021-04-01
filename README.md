@@ -107,7 +107,7 @@ Task 94 observation completed. Task Must be finished. Status:Canceled
 Task 96 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
-## Cancel during execution and break
+## Cancel during execution and break method completation
 
 ```[C#]
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider);
