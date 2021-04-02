@@ -245,7 +245,7 @@ All Queued Tasks have already been finalized!
 ~~~
 ## Observe Tasks after each run.
 
-In this example, after each task definistion(Each Run), a queue process obervation or
+In this example, after each task definition(Each Run), a queue process obervation or
 a oberservation with a cancelation(see first run) will be invoked, forcing to process each task strictly
 sequentially. It is not necesary to do in that way, becasue task are bein managed by the
 Task.Factory(StartNew and Continue), but it is usefull to do after a Run of a relly Long Task, for
