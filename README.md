@@ -10,10 +10,9 @@ one, these subordinated wont be executed.
 It also observes the status of the processing Task for a tracking overview and
 supports task cancellation explicitly or after a given elapsed time.
 Once a task has been cancelled of failed, these subordinated tasks will be
-canceled before starting properly.
+canceled before starting.
 
-*Source Code is maintananced at .Net Core Project at .Net Framework the source files
-to compile are just linkend to them. Almost the Tests*
+*Source Code is maintananced at .Net Core Project. The source file of the .Net Framework project are just linkend to them for compilation.Almost the Tests*
 
 # You will find
 
