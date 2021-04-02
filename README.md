@@ -12,7 +12,7 @@ supports task cancellation explicitly or after a given elapsed time.
 Once a task has been cancelled of failed, these subordinated tasks will be
 canceled before starting.
 
-*Source Code is maintananced at .Net Core Project. The source file of the .Net Framework project are just linkend to them for compilation.Almost the Tests*
+*Source Code is maintananced at .Net Core Project. The source files of the .Net Framework project are just linkend to them for compilation.*
 
 # You will find
 
@@ -22,11 +22,11 @@ This Queue can be added to a GUI and interact properly with the controls because
 2. Observer Design Pattern applied to the Tasks. It could be scaled for monitoring issues.
 3. Event handlers.
 4. IDisposable Pattern.
-5. NUnit with NUnit3 provided. 
+5. Unit Tes with NUnit3. 
 
 # Previsible enhancements to integrate this component into your project
 
-In order to control the object instanciation and because this component does not reference any DI Container, I use to set the accesibility level of each class to private and leave the instanciation responsavility of the class to the class itself over a public static method called Create(params), sothat to integrate this component into another project, just the accesibility level lof each constructor with the required DI metadata attributes are the unic previsible changes.
+In order to control the object instanciation and because this component does not reference any DI Container, I use to set the accesibility level of each constructor to private and leave the instanciation responsavility of the class to the class itself over a public static method called Create(params), sothat to integrate this component into another project, just the accesibility level of each constructor with the required DI metadata attributes are the unic previsible changes.
 
 Any Logger and any implemtation based on any logger interface is integrated and I just write directly into the console. It could be another previsible change to integrate this component into your project.
 
@@ -92,7 +92,7 @@ All Queued Tasks have already been finalized!
 Using the *CancelationToken* provided by the queue.
 
 Cancelation will be sent during the execution of the first task.
-During the executio of *Task.Delay(5000, queue.CancellationToken).Wait();*.
+During the execution of *Task.Delay(5000, queue.CancellationToken).Wait();*.
 As it manages the queue.CancellationToken, this task will be aborted and the
 subordinated ones canceled.
 
@@ -147,7 +147,8 @@ Task 3 observation completed. Task Must be finished. Status:Canceled
 Task 5 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
-## Cancel during execution and break method completation
+## Cancel after elapsed time
+Does not break run execution because this providef tak doen not manage the CancelationToken.
 Cancelation was sent during the execution of the second task but it won't be aborted
 because the action of the second task does not manage the cancelation Token of the queue,
 so that, the second task will be finished and the next ones canceled.
