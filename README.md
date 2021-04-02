@@ -16,8 +16,11 @@ canceled before starting properly.
 
 This Queue can be added to a GUI and interact properly with the controls because can be runnend in the same synchronization Context.
 
-1. Cancel concatenated Task using CancellationTokenSource and CancellationToken
-2. NUnit test provided. 
+1. Task Cancelation and Task abortation with CancellationTokenSource and CancellationToken
+2. Observer Design Pattern applied to the Tasks. Scalable for monitoring issues.
+3. Event handlers.
+4. IDisposable Pattern.
+5. NUnit with NUnit3 provided. 
 
 # Queue Creation
 
