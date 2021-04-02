@@ -24,7 +24,7 @@ This Queue can be added to a GUI and interact properly with the controls because
 
 # Queue Creation
 
-The requires a *TaskSheduler* and a *TasksProvider*.
+The queue requires a *TaskSheduler* and a *TasksProvider*, given by composition and Injected at constructor.
 
 ## TaskSheduler
 The *TaskSheduler* associated with the main thread of the application
@@ -42,11 +42,13 @@ TasksProvider provider = TasksProvider.Create(new List<Task>()));
 ```
 
 ## FifoTaskQueue
+The Queue
 ```csharp
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
 ```
 # Usage
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
+
 # Example
 ## Simple usage
 ```csharp
