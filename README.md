@@ -22,7 +22,7 @@ This Queue can be added to a GUI and interact properly with the controls because
 4. IDisposable Pattern.
 5. NUnit with NUnit3 provided. 
 
-# Previsible 
+# Previsible enhancements to integrate this component into your project
 
 In order to control the object initialization and because this component does not reference any DI Container, I use to set the accesibility level of each class to private and leave the instanciation responsavility of the class to the class itself over a public static method called Create(params), sothat to integrate this component into another project, just the accesibility level lof each constructor with the required DI metadata attributes are the unic previsible changes.
 
