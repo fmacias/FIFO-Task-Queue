@@ -62,16 +62,16 @@ FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
 ## Simple usage
 ```csharp
  [Test()]
-        public async Task AllTaskRemovedAfterCompletationOfEachObservationTest()
-        {
-            FifoTaskQueue queue = CreateTaskQueue();
-            queue.Run(() => { });
-            queue.Run(() => { });
-            queue.Run(() => { });
-            bool done = await queue.ObserveCompletation();
-            Assert.IsTrue(queue.Tasks.Count() == 0);
-            queue.Dispose();
-        }
+ public async Task AllTaskRemovedAfterCompletationOfEachObservationTest()
+ {
+     FifoTaskQueue queue = CreateTaskQueue();
+     queue.Run(() => { });
+     queue.Run(() => { });
+     queue.Run(() => { });
+     bool done = await queue.ObserveCompletation();
+     Assert.IsTrue(queue.Tasks.Count() == 0);
+     queue.Dispose();
+ }
 ```
 *Ouput:*
 ~~~
@@ -99,35 +99,35 @@ subordinated ones canceled.
 
 ```csharp
  [Test()]
-        public async Task run_CancelTest()
-        {
-            FifoTaskQueue queue = CreateTaskQueue();
-            bool firstTaskFinished = false;
-            bool secondTaskfinished = false;
-            bool thirdTaskStarted = false;
+ public async Task run_CancelTest()
+ {
+     FifoTaskQueue queue = CreateTaskQueue();
+     bool firstTaskFinished = false;
+     bool secondTaskfinished = false;
+     bool thirdTaskStarted = false;
 
-            queue.Run(() =>
-            {
-                Task.Delay(5000, queue.CancellationToken).Wait();
-                firstTaskFinished = true;
-            });
-            queue.Run((dummyObject) =>
-            {
-                secondTaskfinished = true;
-            }, new object());
-            queue.Run((dummyObject) =>
-            {
-                thirdTaskStarted = false;
-            }, new object());
-            bool done = await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
-            Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
-            Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
-            Assert.IsFalse(secondTaskfinished, "Second not finished");
-            Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
-            Assert.IsFalse(secondTaskfinished, "third task not finished");
-            queue.Dispose();
-        }
+     queue.Run(() =>
+     {
+         Task.Delay(5000, queue.CancellationToken).Wait();
+         firstTaskFinished = true;
+     });
+     queue.Run((dummyObject) =>
+     {
+         secondTaskfinished = true;
+     }, new object());
+     queue.Run((dummyObject) =>
+     {
+         thirdTaskStarted = false;
+     }, new object());
+     bool done = await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
+     Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
+     Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
+     Assert.IsFalse(secondTaskfinished, "Second not finished");
+     Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
+     Assert.IsFalse(secondTaskfinished, "third task not finished");
+     queue.Dispose();
+}
 ```
 *output*
 ~~~
@@ -155,25 +155,25 @@ because the action of the second task does not manage the cancelation Token of t
 so that, the second task will be finished and the next ones canceled.
 ```csharp
  [Test()]
-        public async Task Complete_SecondTaskRunnedUntilTheEndTest()
-        {
-            FifoTaskQueue queue = CreateTaskQueue();
-            bool taskExecuted = false;
-            queue.Run(() => { });
-            queue.Run(() => {
-                Task.Delay(5000).Wait();
-                taskExecuted = true;
-            });
-            queue.Run(() => { });
-            queue.Run(() => { });
-            int elapsedTimeToCancelQueue = 2000;
-            await queue.CancelAfter(elapsedTimeToCancelQueue, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
-            Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == true, "second Task Completed and executed");
-            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
-            queue.ClearUpTasks();
-            queue.Dispose();
-        }
+ public async Task Complete_SecondTaskRunnedUntilTheEndTest()
+ {
+     FifoTaskQueue queue = CreateTaskQueue();
+     bool taskExecuted = false;
+     queue.Run(() => { });
+     queue.Run(() => {
+         Task.Delay(5000).Wait();
+         taskExecuted = true;
+     });
+     queue.Run(() => { });
+     queue.Run(() => { });
+     int elapsedTimeToCancelQueue = 2000;
+     await queue.CancelAfter(elapsedTimeToCancelQueue, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
+     Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == true, "second Task Completed and executed");
+     Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
+     queue.ClearUpTasks();
+     queue.Dispose();
+}
 ```
 *Output*
 ~~~
@@ -205,35 +205,35 @@ It could be use to access sequentially GUI-Controls, and interact with them.
 
 ```csharp
 [Test()]
-        public async Task Run_WithParameters_ShareObject()
-        {
-            object[] objectRerenceToShare = new object[3];
-            FifoTaskQueue queue = CreateTaskQueue();
-            queue.Run((sharedObject) =>
-            {
-                ((object[])sharedObject)[0] = "a";
-                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
-                    "object is the same at first iteration");
-            }, objectRerenceToShare);
-            queue.Run((sharedObject) =>
-            {
-                ((object[])sharedObject)[1] = "b";
-                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
-                    "object is the same at second iteration");
-            }, objectRerenceToShare);
-            queue.Run((sharedObject) =>
-            {
-                ((object[])sharedObject)[2] = "c";
-                Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
-                    "object is the same at third iteration");
-            }, objectRerenceToShare);
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
-            Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
-            Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
-            Assert.AreEqual("a b c",String.Join(" ", objectRerenceToShare));
-            queue.Dispose();
-        }
+public async Task Run_WithParameters_ShareObject()
+{
+    object[] objectRerenceToShare = new object[3];
+    FifoTaskQueue queue = CreateTaskQueue();
+    queue.Run((sharedObject) =>
+    {
+        ((object[])sharedObject)[0] = "a";
+        Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+            "object is the same at first iteration");
+        }, objectRerenceToShare);
+    queue.Run((sharedObject) =>
+    {
+        ((object[])sharedObject)[1] = "b";
+        Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+            "object is the same at second iteration");
+    }, objectRerenceToShare);
+    queue.Run((sharedObject) =>
+    {
+        ((object[])sharedObject)[2] = "c";
+        Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
+            "object is the same at third iteration");
+     }, objectRerenceToShare);
+     bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
+     Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
+     Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
+     Assert.AreEqual("a b c",String.Join(" ", objectRerenceToShare));
+     queue.Dispose();
+ }
 ```
 *Output*
 ~~~
@@ -261,27 +261,27 @@ a oberservation with a cancelation``` await queue.CancelAfter(2000, EXCLUDE_TASK
 example.
 ```csharp
  [Test()]
-        public async Task CompleteTasks_Called_After_Each_TaskTest()
-        {
-            FifoTaskQueue queue = CreateTaskQueue();
-            bool taskExecuted = false;
-            int elapsedTimeToCancelQueue = 2000;
-            queue.Run(() => {
-                Task.Delay(5000, queue.CancellationToken).Wait();
-            });
-            await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-            Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task Faulted");
-            Assert.IsTrue(queue.Tasks[1].IsCanceled, "second Task completed");
-            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last two completed");
-            queue.ClearUpTasks();
-            queue.Dispose();
-        }
+ public async Task CompleteTasks_Called_After_Each_TaskTest()
+ {
+     FifoTaskQueue queue = CreateTaskQueue();
+     bool taskExecuted = false;
+     int elapsedTimeToCancelQueue = 2000;
+     queue.Run(() => {
+         Task.Delay(5000, queue.CancellationToken).Wait();
+     });
+     await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     queue.Run(() => { });
+         await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     queue.Run(() => { });
+         await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     queue.Run(() => { });
+     await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task Faulted");
+     Assert.IsTrue(queue.Tasks[1].IsCanceled, "second Task completed");
+     Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last two completed");
+     queue.ClearUpTasks();
+     queue.Dispose();
+ }
 ```
 *Output*
 Observing the task after each run.
