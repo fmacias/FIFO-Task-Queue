@@ -56,7 +56,7 @@ The Queue
 FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
 ```
 # Usage
-[Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
+[Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/DotNetCore/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
 # Example
 ## Simple usage
@@ -308,6 +308,6 @@ Task id: 91 final status Canceled
 Task 91 observation completed. Task Must be finished. Status:Canceled 
 All Queued Tasks have already been finalized!
 ~~~
-[Checkout for more examples at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
+[Checkout for more examples at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/DotNetCore/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
 > I am currently looking for a new Project. Please don't hesitate to contact me at fmaciasruano@gmail.com
