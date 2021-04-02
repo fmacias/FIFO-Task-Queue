@@ -1,7 +1,8 @@
 # FifoTaskQueue
 
 FifoTaskQueue is a FIFO task queue for .Net Core 3.1 and .Net Framework and it is able
-to interact with the GUI controlls or to process Task at the backend.
+to interact with the GUI controlls or to process Task at the backend based on the concept
+of "first inpunt first output" (FIFO).
 
 The primary goal of this component is to run asynchronous tasks sequentially,
 assuming that each task is subordinated to the previous ones, so that, canceling
