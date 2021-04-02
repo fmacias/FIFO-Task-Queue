@@ -3,9 +3,33 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "FifoTaskQueue\FifoTaskQueue.csproj", "{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "DotNetFramework\FifoTaskQueue\FifoTaskQueue.csproj", "{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "DotNetFramework\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "clases", "clases", "{A115E88C-39CE-4A74-8DA9-9B8EFC100B9B}"
+	ProjectSection(SolutionItems) = preProject
+		src\classes\FifoTaskQueue.cs = src\classes\FifoTaskQueue.cs
+		src\classes\FifoTaskQueueDisposeException.cs = src\classes\FifoTaskQueueDisposeException.cs
+		src\classes\ITaskQueue.cs = src\classes\ITaskQueue.cs
+		src\classes\ITaskShedulerWraper.cs = src\classes\ITaskShedulerWraper.cs
+		src\classes\ObserverUnsubscriber.cs = src\classes\ObserverUnsubscriber.cs
+		src\classes\TaskObserver.cs = src\classes\TaskObserver.cs
+		src\classes\TaskShedulerWraper.cs = src\classes\TaskShedulerWraper.cs
+		src\classes\TasksProvider.cs = src\classes\TasksProvider.cs
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{202EB99A-E036-4A7A-9D98-5EE32ED802D4}"
+	ProjectSection(SolutionItems) = preProject
+		src\tests\FifoTaskQueueTests.cs = src\tests\FifoTaskQueueTests.cs
+		src\tests\TaskShedulerWraperTest.cs = src\tests\TaskShedulerWraperTest.cs
+		src\tests\TasksObserverTests.cs = src\tests\TasksObserverTests.cs
+		src\tests\TasksProviderTests.cs = src\tests\TasksProviderTests.cs
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotNetFramework", "DotNetFramework", "{3D3846C6-4E84-4537-B933-D0DF4E674A7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +48,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
+		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
+		{A115E88C-39CE-4A74-8DA9-9B8EFC100B9B} = {DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}
+		{202EB99A-E036-4A7A-9D98-5EE32ED802D4} = {DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {067CA09E-EA2D-4FC2-9856-E052662EBD1B}
