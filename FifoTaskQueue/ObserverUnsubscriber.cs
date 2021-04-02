@@ -18,12 +18,12 @@ namespace fmacias
         private List<IObserver<Task>> _observers;
         private IObserver<Task> _observer;
 
-        internal ObserverUnsubscriber(List<IObserver<Task>> observers, IObserver<Task> observer)
+        private ObserverUnsubscriber(List<IObserver<Task>> observers, IObserver<Task> observer)
         {
             this._observers = observers;
             this._observer = observer;
         }
-        public static ObserverUnsubscriber<Task>  Create(List<IObserver<Task>> observers, IObserver<Task> observer)
+        internal static ObserverUnsubscriber<Task> Create(List<IObserver<Task>> observers, IObserver<Task> observer)
         {
             return new ObserverUnsubscriber<Task>(observers, observer);
         }
