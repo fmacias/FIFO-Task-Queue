@@ -93,8 +93,8 @@ All Queued Tasks have already been finalized!
 Using the *CancelationToken* provided by the queue.
 
 Cancelation will be sent during the execution of the first task.
-During the execution of *Task.Delay(5000, queue.CancellationToken).Wait();*.
-As it manages the queue.CancellationToken, this task will be aborted and the
+During the execution of ```Task.Delay(5000, queue.CancellationToken).Wait();```.
+As it manages the ```queue.CancellationToken```, this task will be aborted and the
 subordinated ones canceled.
 
 ```csharp
