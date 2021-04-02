@@ -84,8 +84,9 @@ All Queued Tasks have already been finalized!
 Using the *CancelationToken* provided by the queue.
 
 Cancelation will be sent during the execution of the first task.
-As at this action, *Task.Delay(5000, queue.CancellationToken).Wait();* manages the
-queue.CancellationToken, this task will be aborted.
+During the executio of *Task.Delay(5000, queue.CancellationToken).Wait();*.
+As it manages the queue.CancellationToken, this task will be aborted and the
+subordinated ones canceled.
 
 ```csharp
  [Test()]
@@ -190,7 +191,7 @@ All Queued Tasks have already been finalized!
 
 ## Share the same object into each task. 
 
-It could als be a GUI-Control, for example
+It could be use to access sequentially GUI-Controls, and interact with them.
 
 ```csharp
 [Test()]
@@ -244,7 +245,11 @@ All Queued Tasks have already been finalized!
 ~~~
 ## Observe Tasks after each run.
 
-Where the first one will be broken
+In this example, after each task definistion(Each Run), a queue process obervation or
+a oberservation with a cancelation(see first run) will be invoked, forcing to process each task strictly
+sequentially. It is not necesary to do in that way, becasue task are bein managed by the
+Task.Factory(StartNew and Continue), but it is usefull to do after a Run of a relly Long Task, for
+example.
 ```csharp
  [Test()]
         public async Task CompleteTasks_Called_After_Each_TaskTest()
