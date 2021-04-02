@@ -13,7 +13,7 @@ Once a task has been cancelled of failed, these subordinated tasks will be
 canceled before starting properly.
 
 *Source Code is maintananced at .Net Core Project at .Net Framework the source files
-to compile are just linkend to them.*
+to compile are just linkend to them. Almost the Tests*
 
 # You will find
 
