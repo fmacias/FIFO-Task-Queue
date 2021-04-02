@@ -149,7 +149,7 @@ Task 5 observation completed. Task Must be finished. Status:Canceled
 All Queued Tasks have already been finalized!
 ~~~
 ## Cancel after elapsed time
-Does not break run execution because this provided task does not manage the CancelationToken.
+Does not break run execution because this provided task does not manage the ```CancelationToken```.
 Cancelation was sent during the execution of the second task but it won't be aborted
 because the action of the second task does not manage the cancelation Token of the queue,
 so that, the second task will be finished and the next ones canceled.
@@ -258,7 +258,7 @@ All Queued Tasks have already been finalized!
 In this example, after each task definition(Each Run), a queue process obervation or
 a oberservation with a cancelation(see first run) will be invoked, forcing to process each task strictly
 sequentially. It is not necesary to do in that way, becasue task are bein managed by the
-Task.Factory(StartNew and Continue), but it is usefull to do after a Run of a relly Long Task, for
+```Task.Factory```(StartNew and Continue), but it is usefull to do after a Run of a relly Long Task, for
 example.
 ```csharp
  [Test()]
