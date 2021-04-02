@@ -54,11 +54,19 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="..\..\src\tests\FifoTaskQueueTests.cs" />
+    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\FifoTaskQueueTests.cs">
+      <Link>FifoTaskQueueTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TaskShedulerWraperTest.cs">
+      <Link>TaskShedulerWraperTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TasksObserverTests.cs">
+      <Link>TasksObserverTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TasksProviderTests.cs">
+      <Link>TasksProviderTests.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\..\src\tests\TaskShedulerWraperTest.cs" />
-    <Compile Include="..\..\src\tests\TasksObserverTests.cs" />
-    <Compile Include="..\..\src\tests\TasksProviderTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

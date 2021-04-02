@@ -23,7 +23,6 @@ namespace fmacias.Tests
     public class FifoTaskQueueTests
     {
         const bool EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION = true;
-        private bool abortDownload = false;
         private FifoTaskQueue CreateTaskQueue()
         {
             return FifoTaskQueue.Create(TaskShedulerWraper.Create().FromCurrentWorker(), 
@@ -251,7 +250,7 @@ namespace fmacias.Tests
             Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
             Assert.IsFalse(secondTaskfinished, "Second not finished");
             Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
-            Assert.IsFalse(secondTaskfinished, "third task not finished");
+            Assert.IsFalse(thirdTaskStarted, "third task not finished");
             queue.Dispose();
         }
         [Test()]
@@ -353,8 +352,6 @@ namespace fmacias.Tests
         public async Task CompleteTasks_Called_After_Each_TaskTest()
         {
             FifoTaskQueue queue = CreateTaskQueue();
-            bool taskExecuted = false;
-            int elapsedTimeToCancelQueue = 2000;
             queue.Run(() => {
                 Task.Delay(5000, queue.CancellationToken).Wait();
             });

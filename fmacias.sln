@@ -7,29 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "DotNetFram
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "DotNetFramework\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "clases", "clases", "{A115E88C-39CE-4A74-8DA9-9B8EFC100B9B}"
-	ProjectSection(SolutionItems) = preProject
-		src\classes\FifoTaskQueue.cs = src\classes\FifoTaskQueue.cs
-		src\classes\FifoTaskQueueDisposeException.cs = src\classes\FifoTaskQueueDisposeException.cs
-		src\classes\ITaskQueue.cs = src\classes\ITaskQueue.cs
-		src\classes\ITaskShedulerWraper.cs = src\classes\ITaskShedulerWraper.cs
-		src\classes\ObserverUnsubscriber.cs = src\classes\ObserverUnsubscriber.cs
-		src\classes\TaskObserver.cs = src\classes\TaskObserver.cs
-		src\classes\TaskShedulerWraper.cs = src\classes\TaskShedulerWraper.cs
-		src\classes\TasksProvider.cs = src\classes\TasksProvider.cs
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{202EB99A-E036-4A7A-9D98-5EE32ED802D4}"
-	ProjectSection(SolutionItems) = preProject
-		src\tests\FifoTaskQueueTests.cs = src\tests\FifoTaskQueueTests.cs
-		src\tests\TaskShedulerWraperTest.cs = src\tests\TaskShedulerWraperTest.cs
-		src\tests\TasksObserverTests.cs = src\tests\TasksObserverTests.cs
-		src\tests\TasksProviderTests.cs = src\tests\TasksProviderTests.cs
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotNetFramework", "DotNetFramework", "{3D3846C6-4E84-4537-B933-D0DF4E674A7F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotNetCore", "DotNetCore", "{6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FifoTaskQueue", "DotNetCore\FifoTaskQueue\FifoTaskQueue.csproj", "{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FifoTaskQueueTest", "DotNetCore\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +29,14 @@ Global
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,8 +44,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
-		{A115E88C-39CE-4A74-8DA9-9B8EFC100B9B} = {DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}
-		{202EB99A-E036-4A7A-9D98-5EE32ED802D4} = {DF339A60-FE7B-424A-8FE3-FEB5AAEA776F}
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
+		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {067CA09E-EA2D-4FC2-9856-E052662EBD1B}

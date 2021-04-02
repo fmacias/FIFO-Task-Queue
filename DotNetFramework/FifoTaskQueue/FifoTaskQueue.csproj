@@ -41,15 +41,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\classes\FifoTaskQueue.cs" />
-    <Compile Include="..\..\src\classes\FifoTaskQueueDisposeException.cs" />
-    <Compile Include="..\..\src\classes\ITaskQueue.cs" />
-    <Compile Include="..\..\src\classes\ITaskShedulerWraper.cs" />
-    <Compile Include="..\..\src\classes\ObserverUnsubscriber.cs" />
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\FifoTaskQueue.cs">
+      <Link>FifoTaskQueue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\FifoTaskQueueDisposeException.cs">
+      <Link>FifoTaskQueueDisposeException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\ITaskQueue.cs">
+      <Link>ITaskQueue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\ITaskShedulerWraper.cs">
+      <Link>ITaskShedulerWraper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\ObserverUnsubscriber.cs">
+      <Link>ObserverUnsubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\TaskObserver.cs">
+      <Link>TaskObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\TaskShedulerWraper.cs">
+      <Link>TaskShedulerWraper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\TasksProvider.cs">
+      <Link>TasksProvider.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\..\src\classes\TaskObserver.cs" />
-    <Compile Include="..\..\src\classes\TaskShedulerWraper.cs" />
-    <Compile Include="..\..\src\classes\TasksProvider.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
