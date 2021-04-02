@@ -28,30 +28,22 @@ namespace fmacias.Tests
         }
 
         [Test()]
-        public void OnCompleted_NotCompletedTest()
+        public async Task OnCompleted_NotCompletedTest()
         {
-            Task.Run(async () =>
-            {
-                TaskObserver observer = TaskObserver.Create(Task.Run(() => {  }));
-                observer.OnCompleted();
-                bool completedTransition = await observer.TaskStatusCompletedTransition;
-                Assert.IsFalse(completedTransition);
-            });
-            Task.Delay(1000).Wait();
+            TaskObserver observer = TaskObserver.Create(Task.Run(() => {  }));
+            observer.OnCompleted();
+            bool completedTransition = await observer.TaskStatusCompletedTransition;
+            Assert.IsFalse(completedTransition);
         }
         [Test()]
-        public void OnCompleted_CompletedTest()
+        public async Task OnCompleted_CompletedTest()
         {
-            Task.Run(async () =>
-            {
-                Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
-                TaskObserver observer = TaskObserver.Create(taskToObserve).SetPollingStopElapsedTime(3000);
-                observer.OnNext(taskToObserve);
-                observer.OnCompleted();
-                bool completedTransition = await observer.TaskStatusCompletedTransition;
-                Assert.IsTrue(completedTransition);
-            });
-            Task.Delay(2500).Wait();
+            Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
+            TaskObserver observer = TaskObserver.Create(taskToObserve).SetPollingStopElapsedTime(3000);
+            observer.OnNext(taskToObserve);
+            observer.OnCompleted();
+            bool completedTransition = await observer.TaskStatusCompletedTransition;
+            Assert.IsTrue(completedTransition);
         }
     }
 }
