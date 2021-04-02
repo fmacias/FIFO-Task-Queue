@@ -271,9 +271,9 @@ example.
      });
      await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
      queue.Run(() => { });
-         await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
      queue.Run(() => { });
-         await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+     await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
      queue.Run(() => { });
      await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
      Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task Faulted");
