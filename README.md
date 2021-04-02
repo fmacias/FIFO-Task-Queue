@@ -64,7 +64,7 @@ FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
  [Test()]
  public async Task AllTaskRemovedAfterCompletationOfEachObservationTest()
  {
-     FifoTaskQueue queue = CreateTaskQueue();
+     FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
      queue.Run(() => { });
      queue.Run(() => { });
      queue.Run(() => { });
@@ -101,7 +101,7 @@ subordinated ones canceled.
  [Test()]
  public async Task run_CancelTest()
  {
-     FifoTaskQueue queue = CreateTaskQueue();
+     FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
      bool firstTaskFinished = false;
      bool secondTaskfinished = false;
      bool thirdTaskStarted = false;
@@ -157,7 +157,7 @@ so that, the second task will be finished and the next ones canceled.
  [Test()]
  public async Task Complete_SecondTaskRunnedUntilTheEndTest()
  {
-     FifoTaskQueue queue = CreateTaskQueue();
+     FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
      bool taskExecuted = false;
      queue.Run(() => { });
      queue.Run(() => {
@@ -208,7 +208,7 @@ It could be use to access sequentially GUI-Controls, and interact with them.
 public async Task Run_WithParameters_ShareObject()
 {
     object[] objectRerenceToShare = new object[3];
-    FifoTaskQueue queue = CreateTaskQueue();
+    FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
     queue.Run((sharedObject) =>
     {
         ((object[])sharedObject)[0] = "a";
@@ -263,7 +263,7 @@ example.
  [Test()]
  public async Task CompleteTasks_Called_After_Each_TaskTest()
  {
-     FifoTaskQueue queue = CreateTaskQueue();
+     FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
      bool taskExecuted = false;
      int elapsedTimeToCancelQueue = 2000;
      queue.Run(() => {
