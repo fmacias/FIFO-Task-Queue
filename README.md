@@ -1,6 +1,6 @@
 # FifoTaskQueue
 
-FifoTaskQueue is a FIFO task queue for .Net Framework. and it is able
+FifoTaskQueue is a FIFO task queue for .Net Framework and it is able
 to interact with the GUI controlls or to process Task at the backend.
 
 The primary goal of this component is to run asynchronous tasks sequentially,
