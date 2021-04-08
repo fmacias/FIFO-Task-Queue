@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "DotNetFramework\FifoTaskQueue\FifoTaskQueue.csproj", "{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED} = {9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "DotNetFramework\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
 EndProject
