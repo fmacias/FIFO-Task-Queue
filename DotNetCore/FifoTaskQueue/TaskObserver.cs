@@ -16,7 +16,7 @@ namespace fmacias
     public class TaskObserver : IObserver<Task>
     {
         private readonly Task task;
-        private int pollingStopElapsedTime=1000;
+        private int pollingStopElapsedTime=0;
         private IDisposable cancellation;
         private Task<bool> taskStatusCompletedTransition=Task.Run(()=> { return false; });
         private TaskObserver(Task task)
@@ -68,23 +68,16 @@ namespace fmacias
                 Console.WriteLine(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
                 while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted))
                 {
-                    if (watch.ElapsedMilliseconds > pollingStopElapsedTime)
-                        break; 
                     if (currentStatus != task.Status)
                     {
                         Console.WriteLine(string.Format("Task id: {0} Status transition to {1}", task.Id, task.Status));
                         currentStatus = task.Status;
                     }
                 }
+                Console.WriteLine(string.Format("Task id: {0},  final status {1}, Duration: {2}", task.Id, task.Status, watch.ElapsedMilliseconds));
                 watch.Stop();
-                Console.WriteLine(string.Format("Task id: {0} final status {1}", task.Id, task.Status));
                 return true;
             });
-        }
-        public TaskObserver SetPollingStopElapsedTime(int elapsedTime)
-        {
-            this.pollingStopElapsedTime = elapsedTime;
-            return this;
         }
         public Task ObservableTask => task;
     }

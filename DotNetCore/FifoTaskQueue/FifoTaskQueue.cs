@@ -23,7 +23,7 @@ namespace fmacias
     /// </summary>
     public class FifoTaskQueue : ITaskQueue,IDisposable
     {
-        const int MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS = 10000;
+        const int QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS = 10000;
         private readonly TaskScheduler taskScheduler;
         private readonly TasksProvider tasksProvider;
         private CancellationTokenSource cancellationTokenSource;
@@ -108,7 +108,7 @@ namespace fmacias
         }
         private void AddTask(Task task)
         {
-            TaskObserver observableTask = TaskObserver.Create(task).SetPollingStopElapsedTime(MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS);
+            TaskObserver observableTask = TaskObserver.Create(task);
             observableTask.Subscribe(tasksProvider);
         }
         private Task Start(Action action)
@@ -262,8 +262,8 @@ namespace fmacias
 
         }
         /// <summary>
-        /// Planificate one Queue cancelation after the elapsed time given at taskCancelationTime if provided
-        /// or after the default elapsed time givent at <see cref="MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS"/>.
+        /// Planificate the Queue cancelation after the elapsed time given at taskCancelationTime if provided
+        /// or after the default elapsed time givent at <see cref="QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS"/>.
         /// 
         /// Explanation
         /// -----------
@@ -272,12 +272,12 @@ namespace fmacias
         /// carry those kind of long tasks to a cancel or to a faulted status.
         /// 
         /// </summary>
-        /// <param name="taskCancelationTime"></param>
+        /// <param name="tasksCancelationTime"></param>
         /// <returns></returns>
-        public async Task<bool> CancelAfter(int taskCancelationTime, bool excludeTaskCleanUpAfterFinalization = false)
+        public async Task<bool> CancelAfter(int tasksCancelationTime, bool excludeTaskCleanUpAfterFinalization = false)
         {
-            taskCancelationTime = (taskCancelationTime > 0) ? taskCancelationTime : MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
-            cancellationTokenSource.CancelAfter(taskCancelationTime);
+            tasksCancelationTime = (tasksCancelationTime > 0) ? tasksCancelationTime : QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
+            cancellationTokenSource.CancelAfter(tasksCancelationTime);
             return await this.ObserveCompletation(excludeTaskCleanUpAfterFinalization);
         }
         /// <summary>
@@ -321,7 +321,7 @@ namespace fmacias
             {
                 if (tasksProvider.ObserverSubscritionExist())
                 {
-                    Task<bool> completed = CancelAfter(MAX_QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS);
+                    Task<bool> completed = ObserveCompletation();
                     completed.Wait();
                 }
                 if (tasksProvider.ObserverSubscritionExist())

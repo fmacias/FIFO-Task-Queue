@@ -39,7 +39,7 @@ namespace fmacias.Tests
         public async Task OnCompleted_CompletedTest()
         {
             Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
-            TaskObserver observer = TaskObserver.Create(taskToObserve).SetPollingStopElapsedTime(3000);
+            TaskObserver observer = TaskObserver.Create(taskToObserve);
             observer.OnNext(taskToObserve);
             observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;
