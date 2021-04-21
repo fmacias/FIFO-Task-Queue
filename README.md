@@ -23,7 +23,7 @@ This Queue can be added to a GUI and interact properly with the controls because
 2. Observer Design Pattern applied to the Tasks. It could be scaled for monitoring issues.
 3. Event handlers.
 4. IDisposable Pattern.
-5. Unit Tes with NUnit3. 
+5. Test Cases / Unit Tests with NUnit3. 
 
 # Previsible enhancements to integrate this component into your project
 
