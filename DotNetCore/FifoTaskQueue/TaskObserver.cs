@@ -16,7 +16,6 @@ namespace fmacias
     public class TaskObserver : IObserver<Task>
     {
         private readonly Task task;
-        private int pollingStopElapsedTime=0;
         private IDisposable cancellation;
         private Task<bool> taskStatusCompletedTransition=Task.Run(()=> { return false; });
         private TaskObserver(Task task)
