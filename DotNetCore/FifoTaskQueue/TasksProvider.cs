@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com > .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,15 +20,17 @@ namespace fmacias
     {
         private List<IObserver<Task>> observers;
         private readonly List<Task> tasks;
+        private readonly ILogger logger;
         public event EventHandler<Task> TaskFinishedEventHandler;
-        private TasksProvider(List<Task> tasks)
+        private TasksProvider(List<Task> tasks, ILogger logger)
         {
             observers = new List<IObserver<Task>>();
             this.tasks = tasks;
+            this.logger = logger;
         }
-        public static TasksProvider Create(List<Task> tasks)
+        public static TasksProvider Create(List<Task> tasks, ILogger logger)
         {
-            return new TasksProvider(tasks);
+            return new TasksProvider(tasks,logger);
         }
         public IDisposable Subscribe(IObserver<Task> observer)
         {
@@ -52,8 +55,8 @@ namespace fmacias
                 observer => Object.ReferenceEquals(((TaskObserver)observer).ObservableTask, task));
             }catch(System.InvalidOperationException)
             {
-                Console.WriteLine(string.Format("Task {0} was not registered",task.Id));
-                observerTask = TaskObserver.Create(task);
+                logger.Debug(string.Format("Task {0} was not registered",task.Id));
+                observerTask = TaskObserver.Create(task,logger);
                 ((TaskObserver)observerTask).Subscribe(this);
             }
             return observerTask;

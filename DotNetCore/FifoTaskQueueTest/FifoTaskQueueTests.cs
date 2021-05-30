@@ -16,6 +16,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NLog;
+using Moq;
 
 namespace fmacias.Tests
 {
@@ -25,8 +27,13 @@ namespace fmacias.Tests
         const bool EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION = true;
         private FifoTaskQueue CreateTaskQueue()
         {
+            Mock<ILogger> logger = new Mock<ILogger>();
+            logger.Setup(p => p.Info(It.IsAny<string>()));
+            logger.Setup(p => p.Debug(It.IsAny<string>()));
+            logger.Setup(p => p.Warn(It.IsAny<string>()));
+            logger.Setup(p => p.Error(It.IsAny<string>()));
             return FifoTaskQueue.Create(TaskShedulerWraper.Create().FromCurrentWorker(), 
-                TasksProvider.Create(new List<Task>()));
+                TasksProvider.Create(new List<Task>(), logger.Object),logger.Object);
         }
         [Test()]
         public void CreateTest()

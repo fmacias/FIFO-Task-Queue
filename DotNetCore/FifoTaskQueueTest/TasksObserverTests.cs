@@ -15,22 +15,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NLog;
+using Moq;
 
 namespace fmacias.Tests
 {
     [TestFixture()]
     public class TasksObserverTests
     {
+        private ILogger GetLogger()
+        {
+            Mock<ILogger> logger = new Mock<ILogger>();
+            logger.Setup(p => p.Info(It.IsAny<string>()));
+            logger.Setup(p => p.Debug(It.IsAny<string>()));
+            logger.Setup(p => p.Warn(It.IsAny<string>()));
+            logger.Setup(p => p.Error(It.IsAny<string>()));
+            return logger.Object;
+        }
         [Test()]
         public void TasksObserverCreateTest()
         {
-            Assert.IsTrue(TaskObserver.Create(Task.Run(() => { })) is IObserver<Task>);
+            Assert.IsTrue(TaskObserver.Create(Task.Run(() => { }), GetLogger()) is IObserver<Task>);
         }
 
         [Test()]
         public async Task OnCompleted_NotCompletedTest()
         {
-            TaskObserver observer = TaskObserver.Create(Task.Run(() => {  }));
+            TaskObserver observer = TaskObserver.Create(Task.Run(() => {  }), GetLogger());
             observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;
             Assert.IsFalse(completedTransition);
@@ -39,7 +50,7 @@ namespace fmacias.Tests
         public async Task OnCompleted_CompletedTest()
         {
             Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
-            TaskObserver observer = TaskObserver.Create(taskToObserve);
+            TaskObserver observer = TaskObserver.Create(taskToObserve, GetLogger());
             observer.OnNext(taskToObserve);
             observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;

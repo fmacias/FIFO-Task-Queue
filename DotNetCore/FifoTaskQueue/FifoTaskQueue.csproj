@@ -5,7 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="C:\Users\Fruano\.nuget\packages\nlog.config\4.7.10\contentFiles\any\any\NLog.config" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NLog" Version="4.7.10" />
-    <PackageReference Include="NLog.Config" Version="4.7.10" />
   </ItemGroup>
 </Project>

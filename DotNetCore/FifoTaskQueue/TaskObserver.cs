@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com > .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using NLog;
 using System;
 using System.Threading.Tasks;
 
@@ -16,15 +17,18 @@ namespace fmacias
     public class TaskObserver : IObserver<Task>
     {
         private readonly Task task;
+        private readonly ILogger logger;
+
         private IDisposable cancellation;
         private Task<bool> taskStatusCompletedTransition=Task.Run(()=> { return false; });
-        private TaskObserver(Task task)
+        private TaskObserver(Task task,ILogger logger)
         {
             this.task = task;
+            this.logger = logger;
         }
-        public static TaskObserver Create(Task task)
+        public static TaskObserver Create(Task task, ILogger logger)
         {
-            return new TaskObserver(task);
+            return new TaskObserver(task,logger);
         }
         public Task<bool> TaskStatusCompletedTransition => taskStatusCompletedTransition;
         public async void OnCompleted()
@@ -53,7 +57,7 @@ namespace fmacias
             {
                 return;
             }
-            Console.WriteLine(string.Format("Task id: {0} Will be observe. State: {1}", task.Id, task.Status));
+            logger.Debug(string.Format("Task id: {0} Will be observe. State: {1}", task.Id, task.Status));
             PollingTaskStatusTransition();
         }
         private void PollingTaskStatusTransition()
@@ -64,16 +68,16 @@ namespace fmacias
             {
                 System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
                 TaskStatus currentStatus = task.Status;
-                Console.WriteLine(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
+                logger.Debug(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
                 while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted))
                 {
                     if (currentStatus != task.Status)
                     {
-                        Console.WriteLine(string.Format("Task id: {0} Status transition to {1}", task.Id, task.Status));
+                        logger.Debug(string.Format("Task id: {0} Status transition to {1}", task.Id, task.Status));
                         currentStatus = task.Status;
                     }
                 }
-                Console.WriteLine(string.Format("Task id: {0},  final status {1}, Duration: {2}", task.Id, task.Status, watch.ElapsedMilliseconds));
+                logger.Debug(string.Format("Task id: {0},  final status {1}, Duration: {2}", task.Id, task.Status, watch.ElapsedMilliseconds));
                 watch.Stop();
                 return true;
             });

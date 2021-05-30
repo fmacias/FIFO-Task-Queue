@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,28 +27,30 @@ namespace fmacias
         const int QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS = 10000;
         private readonly TaskScheduler taskScheduler;
         private readonly TasksProvider tasksProvider;
+        private readonly ILogger logger;
         private CancellationTokenSource cancellationTokenSource;
         private bool excludeTaskCleanUpAfterFinalization = false;
         #region Constructor
-        private FifoTaskQueue(TaskScheduler taskScheduler, TasksProvider tasksProvider)
+        private FifoTaskQueue(TaskScheduler taskScheduler, TasksProvider tasksProvider, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.tasksProvider = tasksProvider;
+            this.logger = logger;
             this.tasksProvider.TaskFinishedEventHandler += HandleTaskFinished;
         }
-        public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider)
+        public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider, ILogger logger)
         {
-            return new FifoTaskQueue(taskSheduler, tasksProvider);
+            return new FifoTaskQueue(taskSheduler, tasksProvider, logger);
         }
         #endregion
         #region private
         private void HandleTaskFinished(object sender, Task task)
         {
-            Console.WriteLine(string.Format("Task {0} observation completed. Task Must be finished. Status:{1} ", task.Id, task.Status));
+            logger.Debug(string.Format("Task {0} observation completed. Task Must be finished. Status:{1} ", task.Id, task.Status));
             UnsubscribeTaskObserver(task);
             if (object.ReferenceEquals(GetLastTask(), task))
             {
-                Console.WriteLine("All Queued Tasks have already been finalized!");
+                logger.Debug("All Queued Tasks have already been finalized!");
                 CleanCancelationToken();
             }
             if (!excludeTaskCleanUpAfterFinalization)
@@ -108,7 +111,7 @@ namespace fmacias
         }
         private void AddTask(Task task)
         {
-            TaskObserver observableTask = TaskObserver.Create(task);
+            TaskObserver observableTask = TaskObserver.Create(task,logger);
             observableTask.Subscribe(tasksProvider);
         }
         private Task Start(Action action)
@@ -204,7 +207,7 @@ namespace fmacias
         /// <summary>
         /// Manages the observation of tasks for these completation,  so that  
         /// not needed resources(Tasks, Observers and CancelaTionToken) are being 
-        /// cleaned at execution time for a better performance.
+        /// cleaned at execution time for a better performance at this point of execution.
         /// 
         /// You can run this method whenever you want and so many times you want. 
         /// For example after each <see cref="Run(Action)"/> or 
@@ -237,12 +240,12 @@ namespace fmacias
             }
             catch (TaskCanceledException)
             {
-                Console.WriteLine("\nTasks cancelled: timed out.\n");
+                logger.Debug("\nTasks cancelled: timed out.\n");
             }
             catch (AggregateException ae)
             {
                 TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
-                Console.WriteLine(string.Format("Task {0} Canceled.", exception.Task.Id));
+                logger.Debug(string.Format("Task {0} Canceled.", exception.Task.Id));
             }
             return true;
         }
@@ -278,6 +281,7 @@ namespace fmacias
         {
             tasksCancelationTime = (tasksCancelationTime > 0) ? tasksCancelationTime : QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
             cancellationTokenSource.CancelAfter(tasksCancelationTime);
+            logger.Debug(string.Format("Cancelation of task after {0} miliseconds sent",tasksCancelationTime));
             return await this.ObserveCompletation(excludeTaskCleanUpAfterFinalization);
         }
         /// <summary>
