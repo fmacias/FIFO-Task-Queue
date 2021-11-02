@@ -12,6 +12,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,14 +30,12 @@ namespace fmacias
         private readonly TasksProvider tasksProvider;
         private readonly ILogger logger;
         private CancellationTokenSource cancellationTokenSource;
-        private bool excludeTaskCleanUpAfterFinalization = false;
         #region Constructor
         private FifoTaskQueue(TaskScheduler taskScheduler, TasksProvider tasksProvider, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.tasksProvider = tasksProvider;
             this.logger = logger;
-            this.tasksProvider.TaskFinishedEventHandler += HandleTaskFinished;
         }
         public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider, ILogger logger)
         {
@@ -44,35 +43,6 @@ namespace fmacias
         }
         #endregion
         #region private
-        private void HandleTaskFinished(object sender, Task task)
-        {
-            logger.Debug(string.Format("Task {0} observation completed. Task Must be finished. Status:{1} ", task.Id, task.Status));
-            UnsubscribeTaskObserver(task);
-            if (object.ReferenceEquals(GetLastTask(), task))
-            {
-                logger.Debug("All Queued Tasks have already been finalized!");
-                CleanCancelationToken();
-            }
-            if (!excludeTaskCleanUpAfterFinalization)
-                RemoveDisposableTask(task);
-        }
-
-        private void RemoveDisposableTask(Task task)
-        {
-            if (IsTaskDisposable(task))
-            {
-                List<int> taskIds = new List<int>();
-                taskIds.Add(task.Id);
-                RemoveTasks(taskIds);
-            }
-        }
-
-        private void UnsubscribeTaskObserver(Task task)
-        {
-            if (tasksProvider.ObserverSubscritionExist(task))
-                ((TaskObserver)tasksProvider.GetRequiredObserverByTask(task)).Unsubscribe();
-        }
-
         private bool AreTasksAvailable()
         {
             return (Tasks.Count > 0);
@@ -85,7 +55,19 @@ namespace fmacias
         {
             Action<Task> actionTask = task =>
             {
-                action();
+                try
+                {
+                    action();
+                }
+                catch (TaskCanceledException)
+                {
+                    Console.WriteLine("\nTasks cancelled: timed out.\n");
+                }
+                catch (AggregateException ae)
+                {
+                    TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
+                    Console.WriteLine(string.Format("Task {0} Canceled.", exception.Task.Id));
+                }
             };
             return actionTask;
         }
@@ -93,11 +75,23 @@ namespace fmacias
         {
             Action<Task, object> actionTask = (task, parameters) =>
             {
-                action(parameters);
+                try
+                {
+                    action(parameters);
+                }
+                catch (TaskCanceledException)
+                {
+                    Console.WriteLine("\nTasks cancelled: timed out.\n");
+                }
+                catch (AggregateException ae)
+                {
+                    TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
+                    Console.WriteLine(string.Format("Task {0} Canceled.", exception.Task.Id));
+                }
             };
             return actionTask;
         }
-         void ObserveTask(Task task)
+        private void ObserveTask(Task task)
         {
             tasksProvider.GetRequiredObserverByTask(task).OnNext(task);
         }
@@ -163,14 +157,16 @@ namespace fmacias
 
         public ITaskQueue Run(Action action)
         {
+            Task runningTask;
             if (!AreTasksAvailable())
             {
-                this.ObserveTask(Start(action));
+                runningTask = Start(action);
             }
             else
             {
-                this.ObserveTask(Continue(action));
+                runningTask = Continue(action);
             }
+            ObserveTask(runningTask);
             return this;
         }
         /// <summary>
@@ -182,14 +178,16 @@ namespace fmacias
         /// <returns>ITaskQueue</returns>
         public ITaskQueue Run(Action<object> action, object parameters)
         {
+            Task runningTask;
             if (!AreTasksAvailable())
             {
-                this.ObserveTask(this.Start(action, parameters));
+                runningTask = this.Start(action, parameters);
             }
             else
             {
-                this.ObserveTask(Continue(action, parameters));
+                runningTask = Continue(action, parameters);
             }
+            ObserveTask(runningTask);
             return this;
         }
         /// <summary>
@@ -205,9 +203,7 @@ namespace fmacias
             catch { }
         }
         /// <summary>
-        /// Manages the observation of tasks for these completation,  so that  
-        /// not needed resources(Tasks, Observers and CancelaTionToken) are being 
-        /// cleaned at execution time for a better performance at this point of execution.
+        /// Observes the completation of the queue, it means, that the las task has been finished.
         /// 
         /// You can run this method whenever you want and so many times you want. 
         /// For example after each <see cref="Run(Action)"/> or 
@@ -232,11 +228,27 @@ namespace fmacias
         /// </summary>
         /// <param name="taskCancelationTime"></param>
         /// <returns></returns>
-        public async Task<bool> ObserveCompletation()
+        public async Task<bool> Complete()
         {
             try
             {
-                return await tasksProvider.ObserversCompletation();
+                List<bool> performedObservableTasks = new List<bool>();
+                List<TaskObserver> completedTaskObservers = new List<TaskObserver>();
+                foreach (IObserver<Task> observer in this.tasksProvider.Observers)
+                {
+                    TaskObserver taskObserver = (TaskObserver)observer;
+                    bool observerCompleted = await taskObserver.TaskStatusCompletedTransition;
+                    performedObservableTasks.Add(observerCompleted);
+                    completedTaskObservers.Add(taskObserver);
+                    string success = observerCompleted ? "successfully" : "unsuccessfully";
+                    Console.WriteLine(String.Format("Task {0} observation completed {1}", taskObserver.ObservableTask.Id, success));
+                }
+                completedTaskObservers.ForEach(taskObserver =>
+                {
+                    taskObserver.Unsubscribe();
+                    Console.WriteLine(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
+                });
+                return (Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
             }
             catch (TaskCanceledException)
             {
@@ -250,21 +262,6 @@ namespace fmacias
             return true;
         }
         /// <summary>
-        /// It is like <see cref="ObserveCompletation(int)"/> but excludes the clean up to Task after queue finalization
-        /// to be able to check the task list of the queue after finalization.
-        /// 
-        /// A method <see cref="ClearUpTasks"/> is also provided.
-        /// </summary>
-        /// <param name="excludeTaskCleanUpAfterFinalization"></param>
-        /// <param name="taskCancelationTime"></param>
-        /// <returns></returns>
-        public async Task<bool> ObserveCompletation(bool excludeTaskCleanUpAfterFinalization)
-        {
-            this.excludeTaskCleanUpAfterFinalization = excludeTaskCleanUpAfterFinalization;
-            return await this.ObserveCompletation();
-
-        }
-        /// <summary>
         /// Planificate the Queue cancelation after the elapsed time given at taskCancelationTime if provided
         /// or after the default elapsed time givent at <see cref="QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS"/>.
         /// 
@@ -272,17 +269,16 @@ namespace fmacias
         /// -----------
         /// If the task takes longer, it will be abandoned. The observer will leave the obeservation of the task 
         /// , but wont be removed. Whenever it happens, you should provide to this task the queue CancelationToken to be able
-        /// carry those kind of long tasks to a cancel or to a faulted status.
+        /// carry those kind of long tasks to a canceled or to a faulted status.
         /// 
         /// </summary>
         /// <param name="tasksCancelationTime"></param>
         /// <returns></returns>
-        public async Task<bool> CancelAfter(int tasksCancelationTime, bool excludeTaskCleanUpAfterFinalization = false)
+        public async Task<bool> CancelAfter(int tasksCancelationTime)
         {
             tasksCancelationTime = (tasksCancelationTime > 0) ? tasksCancelationTime : QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS;
             cancellationTokenSource.CancelAfter(tasksCancelationTime);
-            logger.Debug(string.Format("Cancelation of task after {0} miliseconds sent",tasksCancelationTime));
-            return await this.ObserveCompletation(excludeTaskCleanUpAfterFinalization);
+            return await Complete();
         }
         /// <summary>
         /// CancelationToken<see cref="CancellationToken"/> used to manage a cascade cancelation of running or planned tasks.
@@ -323,22 +319,25 @@ namespace fmacias
         {
             if (disposing)
             {
+
                 if (tasksProvider.ObserverSubscritionExist())
                 {
-                    Task<bool> completed = ObserveCompletation();
+                    Task<bool> completed = Complete();
                     completed.Wait();
                 }
+
                 if (tasksProvider.ObserverSubscritionExist())
                 {
-                    throw new FifoTaskQueueDisposeException("Any Observer should be present after completation.");
+                    throw new FifoTaskQueueException("Any Observer should be present after completation.");
                 }
-                this.ClearUpTasks();
+
+                ClearUpTasks();
+
                 if (Tasks.Count() > 0)
                 {
-                    throw new FifoTaskQueueDisposeException("Any Task should be present after observer completation.");
+                    throw new FifoTaskQueueException("Any Task should be present after observer completation.");
                 }
                 this.cancellationTokenSource.Dispose();
-                this.tasksProvider.TaskFinishedEventHandler -= HandleTaskFinished;
             }
         }
         public void Dispose()

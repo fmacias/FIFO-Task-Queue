@@ -21,9 +21,14 @@ namespace fmacias
 
         private IDisposable cancellation;
         private Task<bool> taskStatusCompletedTransition=Task.Run(()=> { return false; });
+        private event EventHandler<TaskObserver> TaskFinishedEventHandler;
+        private bool Completed = false;
+        public Task ObservableTask => task;
+
         private TaskObserver(Task task,ILogger logger)
         {
             this.task = task;
+            TaskFinishedEventHandler += HandleTaskFinished;
             this.logger = logger;
         }
         public static TaskObserver Create(Task task, ILogger logger)
@@ -31,13 +36,9 @@ namespace fmacias
             return new TaskObserver(task,logger);
         }
         public Task<bool> TaskStatusCompletedTransition => taskStatusCompletedTransition;
-        public async void OnCompleted()
+        public void OnCompleted()
         {
-            if (!(await taskStatusCompletedTransition))
-                OnError(new Exception(string.Format("Task {0} Was not Completed at this point of execution!")));
-            taskStatusCompletedTransition.Dispose();
-            if (TasksProvider.HasTaskBeenFinished(task))
-                task.Dispose();
+            Completed = true;
         }
         public virtual void Subscribe(TasksProvider provider)
         {
@@ -79,9 +80,27 @@ namespace fmacias
                 }
                 logger.Debug(string.Format("Task id: {0},  final status {1}, Duration: {2}", task.Id, task.Status, watch.ElapsedMilliseconds));
                 watch.Stop();
+                OnTaskFinished();
                 return true;
-            });
+            }); 
         }
-        public Task ObservableTask => task;
+        protected virtual void OnTaskFinished()
+        {
+            // Make a temporary copy of the event to avoid possibility of
+            // a race condition if the last subscriber unsubscribes
+            // immediately after the null check and before the event is raised.
+            EventHandler<TaskObserver> raiseEvent = TaskFinishedEventHandler;
+
+            // Event will be null if there are no subscribers
+            if (raiseEvent != null)
+            {
+                // Call to raise the event.
+                raiseEvent(this, this);
+            }
+        }
+        private void HandleTaskFinished(object sender, TaskObserver oberver)
+        {
+            oberver.OnCompleted();
+        }
     }
 }
