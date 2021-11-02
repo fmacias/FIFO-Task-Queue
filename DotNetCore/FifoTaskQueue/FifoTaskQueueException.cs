@@ -12,18 +12,18 @@ using System;
 
 namespace fmacias
 {
-    class FifoTaskQueueDisposeException:Exception
+    class FifoTaskQueueException:Exception
     {
-        public FifoTaskQueueDisposeException()
+        public FifoTaskQueueException()
         {
         }
 
-        public FifoTaskQueueDisposeException(string message)
+        public FifoTaskQueueException(string message)
             : base(message)
         {
         }
 
-        public FifoTaskQueueDisposeException(string message, Exception inner)
+        public FifoTaskQueueException(string message, Exception inner)
             : base(message, inner)
         {
         }

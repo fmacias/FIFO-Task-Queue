@@ -3,15 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "DotNetFramework\FifoTaskQueue\FifoTaskQueue.csproj", "{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}"
-	ProjectSection(ProjectDependencies) = postProject
-		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED} = {9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "DotNetFramework\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotNetFramework", "DotNetFramework", "{3D3846C6-4E84-4537-B933-D0DF4E674A7F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotNetCore", "DotNetCore", "{6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FifoTaskQueue", "DotNetCore\FifoTaskQueue\FifoTaskQueue.csproj", "{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}"
@@ -24,14 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,8 +28,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
-		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8} = {3D3846C6-4E84-4537-B933-D0DF4E674A7F}
 		{9E3C8D4A-FA28-490F-8F48-3A9776C3D3ED} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
 		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
 	EndGlobalSection

@@ -16,13 +16,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace fmacias.Tests
 {
     [TestFixture()]
     public class FifoTaskQueueTests
     {
-        const bool EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION = true;
         private FifoTaskQueue CreateTaskQueue()
         {
             return FifoTaskQueue.Create(TaskShedulerWraper.Create().FromCurrentWorker(), 
@@ -33,8 +33,40 @@ namespace fmacias.Tests
         {
             Assert.IsInstanceOf<ITaskQueue>(CreateTaskQueue());
         }
+        /// <summary>
+        /// Run and dispose the queue.
+        /// FifoTaskQueue is one <see cref="IDisposable"/> object.
+        /// </summary>
         [Test()]
-        public async Task Run_RunOrderIsSequential()
+        public void RunTheQueueItselfAtSynchronMethodTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool firstRun = false;
+            bool secondRun = false;
+            bool thirdRun = false;
+            queue.Run(() =>
+            {
+                Task.Delay(500).Wait();
+                firstRun = true;
+                Assert.IsTrue(firstRun == true && secondRun == false && thirdRun == false);
+            });
+            queue.Run(() =>
+            {
+                Task.Delay(500).Wait();
+                secondRun = true;
+                Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == false);
+            });
+            queue.Run(() =>
+            {
+                Task.Delay(1000).Wait();
+                thirdRun = true;
+                Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == true);
+            });
+            queue.Dispose();
+        }
+
+        [Test()]
+        public async Task RunTheQueueItselfAtAsyncMethodTest()
         {
             FifoTaskQueue queue = CreateTaskQueue();
             bool firstRun = false;
@@ -55,13 +87,12 @@ namespace fmacias.Tests
                 thirdRun = true;
                 Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == true);
             });
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
             Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
-            queue.ClearUpTasks();
-            Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
             queue.Dispose();
+            Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
         }
         [Test()]
         public async Task Run_WithParameters_RunOrderIsSequentialTest()
@@ -79,13 +110,13 @@ namespace fmacias.Tests
             {
                 secondRun = true;
                 Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == false);
-            }, new Object());
+            }, new object());
             queue.Run((testx) =>
             {
                 thirdRun = true;
                 Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == true);
-            }, new Object());
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            }, new object());
+            bool done = await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
             Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
@@ -116,7 +147,7 @@ namespace fmacias.Tests
                 Assert.AreEqual(3, countIterations);
                 Assert.AreEqual(0, parameters);
             }, countIterations);
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "Task 1 is completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "Task 2 is completed");
             Assert.IsTrue(queue.Tasks[2].IsCompleted, "Task 3 is completed");
@@ -159,7 +190,7 @@ namespace fmacias.Tests
             queue.Run(() => { });
             queue.Run(() => { });
             queue.Run(() => { });
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsCompleted == true &&
             queue.Tasks[1].IsCompleted == true &&
             queue.Tasks[2].IsCompleted == true);
@@ -168,15 +199,12 @@ namespace fmacias.Tests
             queue.Dispose();
         }
         [Test()]
-        public async Task AllTaskRemovedAfterCompletationOfEachObservationTest()
+        public void IsActionAsyncTest()
         {
-            FifoTaskQueue queue = CreateTaskQueue();
-            queue.Run(() => { });
-            queue.Run(() => { });
-            queue.Run(() => { });
-            bool done = await queue.ObserveCompletation();
-            Assert.IsTrue(queue.Tasks.Count() == 0);
-            queue.Dispose();
+            Action asyncAction = async () => { };
+            Action syncAction = () => { };
+            Assert.IsTrue(asyncAction.Method.IsDefined(typeof(AsyncStateMachineAttribute), false));
+            Assert.IsFalse(syncAction.Method.IsDefined(typeof(AsyncStateMachineAttribute), false));
         }
         /// <summary>
         /// Queue is composed by three tasks.
@@ -212,7 +240,7 @@ namespace fmacias.Tests
             {
                 Assert.IsTrue(downloaded1 == false && downloaded2 == false);
             });
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             //wait for download finalization at async methods.
             Task.Delay(4500).Wait();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "all task completed");
@@ -232,7 +260,6 @@ namespace fmacias.Tests
 
             queue.Run(() =>
             {
-//                queue.CancelExecution();
                 Task.Delay(5000, queue.CancellationToken).Wait();
                 firstTaskFinished = true;
             });
@@ -244,7 +271,7 @@ namespace fmacias.Tests
             {
                 thirdTaskStarted = false;
             }, new object());
-            bool done = await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.CancelAfter(2000);
             Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
             Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
             Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
@@ -276,7 +303,7 @@ namespace fmacias.Tests
                 Assert.IsTrue(object.ReferenceEquals(sharedObject, objectRerenceToShare),
                     "object is the same at third iteration");
             }, objectRerenceToShare);
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "first task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "second task completed");
             Assert.IsTrue(queue.Tasks[2].IsCompleted, "third task completed");
@@ -304,7 +331,7 @@ namespace fmacias.Tests
             queue.Run(() => { });
             queue.Run(() => { });
             int elapsedTimeToCancelQueue = 2000;
-            await queue.CancelAfter(elapsedTimeToCancelQueue, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.CancelAfter(elapsedTimeToCancelQueue);
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == true, "second Task Completed and executed");
             Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
@@ -332,10 +359,11 @@ namespace fmacias.Tests
             queue.Run(() => { });
             queue.Run(() => { });
             int elapsedTimeToCancelQueue = 2000;
-            await queue.CancelAfter(elapsedTimeToCancelQueue, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.CancelAfter(elapsedTimeToCancelQueue);
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
-            Assert.IsTrue(queue.Tasks[1].IsFaulted && taskExecuted == false, "second Task faulted and broken");
-            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
+            Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == false, "second Task completed but broken.");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[2].IsCanceled, "Last tasks canceled");
+            Assert.IsTrue(queue.Tasks[3].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
             queue.ClearUpTasks();
             queue.Dispose();
         }
@@ -355,17 +383,16 @@ namespace fmacias.Tests
             queue.Run(() => {
                 Task.Delay(5000, queue.CancellationToken).Wait();
             });
-            await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.CancelAfter(2000);
             queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.Complete();
             queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.Complete();
             queue.Run(() => { });
-            await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            await queue.Complete();
             Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task Faulted");
             Assert.IsTrue(queue.Tasks[1].IsCanceled, "second Task completed");
             Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[3].IsCanceled, "Last two completed");
-            queue.ClearUpTasks();
             queue.Dispose();
         }
         [Test()]
@@ -376,7 +403,6 @@ namespace fmacias.Tests
             bool downloaded2 = false;
             queue.Run(() =>
             {
-
                 using (Task<bool> downloading = Download(1000))
                 {
                     downloading.Wait();
@@ -397,7 +423,7 @@ namespace fmacias.Tests
             {
                 Assert.IsTrue(downloaded1 == true && downloaded2 == true);
             });
-            bool done = await queue.ObserveCompletation(EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
+            bool done = await queue.Complete();
             //wait for download finalization at async methods.
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "all task completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted, "all task completed");
