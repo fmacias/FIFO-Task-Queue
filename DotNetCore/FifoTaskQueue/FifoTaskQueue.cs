@@ -241,12 +241,12 @@ namespace fmacias
                     performedObservableTasks.Add(observerCompleted);
                     completedTaskObservers.Add(taskObserver);
                     string success = observerCompleted ? "successfully" : "unsuccessfully";
-                    Console.WriteLine(String.Format("Task {0} observation completed {1}", taskObserver.ObservableTask.Id, success));
+                    logger.Debug(String.Format("Task {0} observation completed {1}", taskObserver.ObservableTask.Id, success));
                 }
                 completedTaskObservers.ForEach(taskObserver =>
                 {
                     taskObserver.Unsubscribe();
-                    Console.WriteLine(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
+                    logger.Debug(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
                 });
                 return (Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
             }

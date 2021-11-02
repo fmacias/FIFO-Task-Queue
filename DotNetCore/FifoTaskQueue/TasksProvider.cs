@@ -21,7 +21,7 @@ namespace fmacias
         private List<IObserver<Task>> observers;
         private readonly List<Task> tasks;
         private readonly ILogger logger;
-        private TasksProvider(List<Task> tasks,, ILogger logger)
+        private TasksProvider(List<Task> tasks, ILogger logger)
         {
             observers = new List<IObserver<Task>>();
             this.tasks = tasks;
