@@ -39,7 +39,7 @@ namespace fmacias.Tests
             Assert.IsInstanceOf<ITaskQueue>(CreateTaskQueue());
         }
         [Test()]
-        public async Task ContinueTest()
+        public async Task CompleteTest()
         {
             FifoTaskQueue queue = CreateTaskQueue();
             queue.Run(() =>
