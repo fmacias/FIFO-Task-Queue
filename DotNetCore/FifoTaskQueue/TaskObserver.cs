@@ -16,6 +16,7 @@ namespace fmacias
 {
     public class TaskObserver : IObserver<Task>
     {
+        private const int MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS = 10000;
         private readonly Task task;
         private readonly ILogger logger;
 
@@ -71,7 +72,8 @@ namespace fmacias
                 System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
                 TaskStatus currentStatus = task.Status;
                 logger.Debug(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
-                while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted))
+
+                while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted) || (watch.ElapsedMilliseconds > MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
                 {
                     if (currentStatus != task.Status)
                     {

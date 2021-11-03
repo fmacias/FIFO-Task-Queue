@@ -395,7 +395,9 @@ namespace fmacias.Tests
         /// creation of the first run, so that the queue keep traking the first task as soon as it has 
         /// been created.
         /// 
-        /// In this example
+        /// In this example, during the execution of the second task, it will be canceled, 
+        /// and as the CancellationToken is also being collected, the status of this task will
+        /// be set to faulted.
         /// 
         /// </summary>
         /// <returns></returns>
