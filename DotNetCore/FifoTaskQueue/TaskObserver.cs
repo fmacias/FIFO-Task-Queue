@@ -47,6 +47,7 @@ namespace fmacias
         public virtual void Unsubscribe()
         {
             cancellation.Dispose();
+            TaskFinishedEventHandler -= HandleTaskFinished;
         }
         public void OnError(Exception error)
         {
