@@ -58,15 +58,6 @@ namespace fmacias
         {
             return observers.Count > 0;
         }
-        public async Task<bool> ObserversCompletation()
-        {
-            foreach (IObserver<Task> observer in observers)
-            {
-                TaskObserver taskObserver = (TaskObserver)observer;
-                await taskObserver.TaskStatusCompletedTransition;
-            }
-            return true;
-        }
         private bool HasObserverBeenRegistered(IObserver<Task> observer)
         {
             return observers.Contains(observer);
