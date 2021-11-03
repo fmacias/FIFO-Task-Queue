@@ -44,14 +44,16 @@ TaskScheduler currentGuiSheduler = TaskShedulerWraper.Create().FromGUIWorker();
 
 ## TasksProvider
 The provider, which is the object that sends notifications to the observed Tasks.
+Signatures:
 ```csharp
-TasksProvider provider = TasksProvider.Create(new List<Task>()));
+public static TasksProvider Create(List<Task> tasks, ILogger logger)
+public static TaskObserver Create(Task task, ILogger logger)
 ```
 
 ## FifoTaskQueue
-The Queue
+Signature:
 ```csharp
-FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
+public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider, ILogger logger)
 ```
 # Usage
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/DotNetCore/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
