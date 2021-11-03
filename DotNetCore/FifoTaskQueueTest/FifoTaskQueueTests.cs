@@ -27,18 +27,35 @@ namespace fmacias.Tests
     {
         private FifoTaskQueue CreateTaskQueue()
         {
-            Mock<ILogger> logger = new Mock<ILogger>();
-            logger.Setup(p => p.Info(It.IsAny<string>()));
-            logger.Setup(p => p.Debug(It.IsAny<string>()));
-            logger.Setup(p => p.Warn(It.IsAny<string>()));
-            logger.Setup(p => p.Error(It.IsAny<string>()));
-            return FifoTaskQueue.Create(TaskShedulerWraper.Create().FromCurrentWorker(), 
-                TasksProvider.Create(new List<Task>(), logger.Object),logger.Object);
+            Logger logger = LogManager.GetCurrentClassLogger();
+            return FifoTaskQueue.Create(
+                TaskShedulerWraper.Create().FromCurrentWorker(), 
+                TasksProvider.Create(new List<Task>(), logger),
+                logger);
         }
         [Test()]
         public void CreateTest()
         {
             Assert.IsInstanceOf<ITaskQueue>(CreateTaskQueue());
+        }
+        [Test()]
+        public async Task ContinueTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            queue.Run(() =>
+            {
+                Task.Delay(500).Wait();
+            });
+            queue.Run(() =>
+            {
+                Task.Delay(500).Wait();
+            });
+            queue.Run(() =>
+            {
+                Task.Delay(500).Wait();
+            });
+            Assert.IsTrue(await queue.Complete());
+            queue.Dispose();
         }
         /// <summary>
         /// Run and dispose the queue.
