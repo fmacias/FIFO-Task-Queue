@@ -248,7 +248,7 @@ namespace fmacias
                     taskObserver.Unsubscribe();
                     logger.Debug(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
                 });
-                return (Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
+                return !(Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
             }
             catch (TaskCanceledException)
             {
