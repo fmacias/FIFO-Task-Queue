@@ -94,8 +94,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Include="..\..\DotNetCore\FifoTaskQueueTest\NLog.config">
+      <Link>NLog.config</Link>
     </None>
     <None Include="packages.config" />
   </ItemGroup>
