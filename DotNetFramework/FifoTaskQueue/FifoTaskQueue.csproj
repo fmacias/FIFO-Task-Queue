@@ -52,8 +52,8 @@
     <Compile Include="..\..\DotNetCore\FifoTaskQueue\FifoTaskQueue.cs">
       <Link>FifoTaskQueue.cs</Link>
     </Compile>
-    <Compile Include="..\..\DotNetCore\FifoTaskQueue\FifoTaskQueueDisposeException.cs">
-      <Link>FifoTaskQueueDisposeException.cs</Link>
+    <Compile Include="..\..\DotNetCore\FifoTaskQueue\FifoTaskQueueException.cs">
+      <Link>FifoTaskQueueException.cs</Link>
     </Compile>
     <Compile Include="..\..\DotNetCore\FifoTaskQueue\ITaskQueue.cs">
       <Link>ITaskQueue.cs</Link>
