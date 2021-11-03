@@ -391,12 +391,10 @@ namespace fmacias.Tests
             queue.Dispose();
         }
         /// <summary>
-        /// It is posible to invoke the CompleteTasks method several times, for example after
+        /// It is posible to invoke the Complete method several times, for example after
         /// creation of the first run, so that the queue keep traking the first task as soon as it has 
         /// been created.
         /// 
-        /// Imagine, that you have a IEnummerable of dependent actions to perform and you what to track each one
-        /// dinamically after each iteration.
         /// </summary>
         /// <returns></returns>
         [Test()]
