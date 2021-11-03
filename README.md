@@ -181,55 +181,54 @@ During the execution of ```Task.Delay(5000, queue.CancellationToken).Wait();```.
 As it manages the ```queue.CancellationToken```, this task will be aborted and the
 subordinated ones canceled.
 ```csharp
- [Test()]
- public async Task run_CancelTest()
- {
-     FifoTaskQueue queue = CreateTaskQueue(); // -> FifoTaskQueue queue = FifoTaskQueue.Create(currentGuiSheduler,provider)
-     bool firstTaskFinished = false;
-     bool secondTaskfinished = false;
-     bool thirdTaskStarted = false;
+  [Test()]
+        public async Task run_CancelTest()
+        {
+            FifoTaskQueue queue = CreateTaskQueue();
+            bool firstTaskFinished = false;
+            bool secondTaskfinished = false;
+            bool thirdTaskStarted = false;
 
-     queue.Run(() =>
-     {
-         Task.Delay(5000, queue.CancellationToken).Wait();
-         firstTaskFinished = true;
-     });
-     queue.Run((dummyObject) =>
-     {
-         secondTaskfinished = true;
-     }, new object());
-     queue.Run((dummyObject) =>
-     {
-         thirdTaskStarted = false;
-     }, new object());
-     bool done = await queue.CancelAfter(2000, EXCLUDE_TASK_CLEANUP_AFTER_FINALIZATION);
-     Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
-     Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
-     Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
-     Assert.IsFalse(secondTaskfinished, "Second not finished");
-     Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
-     Assert.IsFalse(secondTaskfinished, "third task not finished");
-     queue.Dispose();
-}
+            queue.Run(() =>
+            {
+                Task.Delay(5000, queue.CancellationToken).Wait();
+                firstTaskFinished = true;
+            });
+            queue.Run((dummyObject) =>
+            {
+                secondTaskfinished = true;
+            }, new object());
+            queue.Run((dummyObject) =>
+            {
+                thirdTaskStarted = false;
+            }, new object());
+            bool done = await queue.CancelAfter(2000);
+            Assert.IsTrue(queue.Tasks[0].IsFaulted, "First Task faulted");
+            Assert.IsFalse(firstTaskFinished, "First Task's Action not terminated");
+            Assert.IsTrue(queue.Tasks[1].IsCanceled, "Second Task Canceled");
+            Assert.IsFalse(secondTaskfinished, "Second not finished");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled, "third Task Canceled");
+            Assert.IsFalse(thirdTaskStarted, "third task not finished");
+            queue.Dispose();
+        }
 ```
 *output*
 ~~~
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23 Will be observe. State: WaitingToRun
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23 initial status Running
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24 Will be observe. State: WaitingForActivation
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24 initial status WaitingForActivation
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25 Will be observe. State: WaitingForActivation
-2021-11-03 14:22:39.0535|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25 initial status WaitingForActivation
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24,  final status Canceled, Duration: 2055
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23 Status transition to Faulted
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23,  final status Faulted, Duration: 2058
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 23 observation completed successfully
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 24 observation completed successfully
-2021-11-03 14:22:41.1106|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25,  final status Canceled, Duration: 2054
-2021-11-03 14:22:41.1136|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 25 observation completed successfully
-2021-11-03 14:22:41.1136|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 23 unsubscribed!
-2021-11-03 14:22:41.1136|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 24 unsubscribed!
-2021-11-03 14:22:41.1136|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 25 unsubscribed!
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23 Will be observe. State: WaitingToRun
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23 initial status Running
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24 Will be observe. State: WaitingForActivation
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25 Will be observe. State: WaitingForActivation
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24 initial status WaitingForActivation
+2021-11-03 15:50:11.4979|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25 initial status WaitingForActivation
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 24,  final status Canceled, Duration: 2055
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 25,  final status Canceled, Duration: 2053
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 23,  final status Faulted, Duration: 2056
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 23 observation completed successfully
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 24 observation completed successfully
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 25 observation completed successfully
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 23 unsubscribed!
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 24 unsubscribed!
+2021-11-03 15:50:13.5540|DEBUG|fmacias.Tests.FifoTaskQueueTests|Observer of Task 25 unsubscribed!
 ~~~
 ## Cancel after elapsed time without manage the CancelationToken
 Does not break run execution because this provided task does not manage the ```CancelationToken```.

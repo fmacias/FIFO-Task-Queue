@@ -395,6 +395,8 @@ namespace fmacias.Tests
         /// creation of the first run, so that the queue keep traking the first task as soon as it has 
         /// been created.
         /// 
+        /// In this example
+        /// 
         /// </summary>
         /// <returns></returns>
         [Test()]
