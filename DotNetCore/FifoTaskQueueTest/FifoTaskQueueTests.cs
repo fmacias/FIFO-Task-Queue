@@ -338,8 +338,7 @@ namespace fmacias.Tests
         /// During the execution of the second task, a cancelation to the queue
         /// if the work takes longer than 2 seconds, has been sent.
         /// 
-        /// But, as the task does not collect the cancelation token, the second task will be finished
-        /// after its execution. But the next ones canceled.
+        /// But, as the task does not collect the cancelation token, the second task will be finished.
         /// </summary>
         /// <returns></returns>
         [Test()]
@@ -366,9 +365,9 @@ namespace fmacias.Tests
         /// During the execution of the second task, a cancelation to the queue
         /// if the work takes longer than 2 seconds, has been sent.
         /// 
-        /// As the task collects the cancelation token, the second task wont be finished
-        /// after its execution and its Status will be set to <see cref="TaskStatus.Faulted"/>. 
-        /// But the next one after that will be canceled.
+        /// As the task collects the cancelation token, the second task wont be finished,
+        /// allthough it status will be set to <see cref="TaskStatus.IsCompleted"/>,
+        /// the exection will be broken.
         /// </summary>
         [Test()]
         public async Task Complete_SecondTaskBrokenTest()
