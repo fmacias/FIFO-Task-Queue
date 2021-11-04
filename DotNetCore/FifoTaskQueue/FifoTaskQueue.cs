@@ -23,7 +23,7 @@ namespace fmacias
     /// <see cref="T:System.Threading.Tasks.TaskScheduler" /> according to the FIFO(First Input 
     /// first output) concept.
     /// </summary>
-    internal class FifoTaskQueue : ITaskQueue,IDisposable
+    internal class FifoTaskQueue : ITaskQueue
     {
         const int QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS = 10000;
         private readonly TaskScheduler taskScheduler;
