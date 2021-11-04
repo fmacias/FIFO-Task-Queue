@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace fmacias
 {
-    public class TaskObserver : IObserver<Task>
+    internal class TaskObserver : IObserver<Task>
     {
         private const int MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS = 10000;
         private readonly Task task;

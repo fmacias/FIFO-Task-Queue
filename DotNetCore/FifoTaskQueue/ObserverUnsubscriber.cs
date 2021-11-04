@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace fmacias
 {
-    public class ObserverUnsubscriber<Task> : IDisposable
+    internal class ObserverUnsubscriber<Task> : IDisposable
     {
         private List<IObserver<Task>> _observers;
         private IObserver<Task> _observer;

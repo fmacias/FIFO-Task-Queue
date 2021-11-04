@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace fmacias
 {
-    public class TasksProvider : IObservable<Task>
+    internal class TasksProvider : IObservable<Task>
     {
         private List<IObserver<Task>> observers;
         private readonly List<Task> tasks;
