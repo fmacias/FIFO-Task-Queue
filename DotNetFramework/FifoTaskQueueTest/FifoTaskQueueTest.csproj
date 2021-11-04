@@ -100,6 +100,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj">
+      <Project>{b1456ac0-e3e5-4406-a26d-42c522253300}</Project>
+      <Name>FifoTaskQueueAbstract</Name>
+    </ProjectReference>
     <ProjectReference Include="..\FifoTaskQueue\FifoTaskQueue.csproj">
       <Project>{fd6d6e32-8e07-47d1-ab51-24487a6f8ebd}</Project>
       <Name>FifoTaskQueue</Name>

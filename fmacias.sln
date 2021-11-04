@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueue", "DotNetFram
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueTest", "DotNetFramework\FifoTaskQueueTest\FifoTaskQueueTest.csproj", "{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FifoTaskQueueAbstract", "DotNetCore\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj", "{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FifoTaskQueueAbstract", "DotNetFramework\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj", "{B1456AC0-E3E5-4406-A26D-42C522253300}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +41,14 @@ Global
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1456AC0-E3E5-4406-A26D-42C522253300}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1456AC0-E3E5-4406-A26D-42C522253300}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1456AC0-E3E5-4406-A26D-42C522253300}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1456AC0-E3E5-4406-A26D-42C522253300}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +58,8 @@ Global
 		{4DB49FE7-DCD3-4544-B22E-24F3CEF7098D} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
 		{FD6D6E32-8E07-47D1-AB51-24487A6F8EBD} = {CC82DD53-3EAC-4CFA-A3B5-6984F6357E69}
 		{BAD2885C-AC9E-4AFA-905D-78D64B4214F8} = {CC82DD53-3EAC-4CFA-A3B5-6984F6357E69}
+		{F8129C22-3755-4FD4-BF0F-DBFA674F5ACD} = {6B9E3C15-F413-4E7F-8D49-1CFB8AA08507}
+		{B1456AC0-E3E5-4406-A26D-42C522253300} = {CC82DD53-3EAC-4CFA-A3B5-6984F6357E69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {067CA09E-EA2D-4FC2-9856-E052662EBD1B}
