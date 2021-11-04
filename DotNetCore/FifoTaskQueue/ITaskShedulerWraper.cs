@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace fmacias
 {
-    public interface ITaskShedulerWraper
+    internal interface ITaskShedulerWraper
     {
         /// <summary>
         /// GUI (graphical user interface) application frameworks for the .NET Framework, 
