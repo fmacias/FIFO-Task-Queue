@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace fmacias
 {
-    public interface ITaskQueue
+    public interface ITaskQueue: IDisposable
     {
         TaskScheduler TaskSheduler { get; }
         ITaskQueue Run(Action<object> action, object parameters);
