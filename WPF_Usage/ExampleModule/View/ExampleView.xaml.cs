@@ -13,18 +13,22 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Unity;
+using WPF_Usage.ExampleModule.View;
 
 namespace WPF_Usage
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class ExampleView : Window, IExampleView
     {
-        public MainWindow()
+        public ExampleView()
         {
             InitializeComponent();
         }
+        [Unity.Dependency]
+        public IExamplePresenter ExamplePresenter { get; set; }
 
         private void ButtonAddName_Click(object sender, RoutedEventArgs e)
         {
