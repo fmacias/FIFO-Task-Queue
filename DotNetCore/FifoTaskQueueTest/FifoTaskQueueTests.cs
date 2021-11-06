@@ -27,11 +27,9 @@ namespace fmacias.Tests
     {
         private FifoTaskQueue CreateTaskQueue()
         {
-            Logger logger = LogManager.GetCurrentClassLogger();
             return FifoTaskQueue.Create(
-                TaskShedulerWraper.Create().FromCurrentWorker(), 
-                TasksProvider.Create(new List<Task>(), logger),
-                logger);
+                TaskShedulerWraper.Create().FromCurrentWorker(),
+                LogManager.GetCurrentClassLogger());
         }
         [Test()]
         public void CreateTest()

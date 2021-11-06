@@ -23,26 +23,36 @@ namespace fmacias
     /// <see cref="T:System.Threading.Tasks.TaskScheduler" /> according to the FIFO(First Input 
     /// first output) concept.
     /// </summary>
-    internal class FifoTaskQueue : ITaskQueue
+    public class FifoTaskQueue : ITaskQueue
     {
         const int QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS = 10000;
         private readonly TaskScheduler taskScheduler;
-        private readonly TasksProvider tasksProvider;
         private readonly ILogger logger;
         private CancellationTokenSource cancellationTokenSource;
+        private TasksProvider tasksProvider;
         #region Constructor
-        private FifoTaskQueue(TaskScheduler taskScheduler, TasksProvider tasksProvider, ILogger logger)
+        private FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
-            this.tasksProvider = tasksProvider;
             this.logger = logger;
         }
-        public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider, ILogger logger)
+        public static FifoTaskQueue Create(TaskScheduler taskSheduler, ILogger logger)
         {
-            return new FifoTaskQueue(taskSheduler, tasksProvider, logger);
+            return new FifoTaskQueue(taskSheduler, logger);
         }
         #endregion
         #region private
+        private TasksProvider Provider
+        {
+            get
+            {
+
+                if (tasksProvider == null)
+                    tasksProvider = TasksProvider.Create(logger);
+
+                return tasksProvider;
+            }
+        }
         private bool AreTasksAvailable()
         {
             return (Tasks.Count > 0);
@@ -93,7 +103,7 @@ namespace fmacias
         }
         private void ObserveTask(Task task)
         {
-            tasksProvider.GetRequiredObserverByTask(task).OnNext(task);
+            Provider.GetRequiredObserverByTask(task).OnNext(task);
         }
         private CancellationToken CreateQueueCancelationToken()
         {
@@ -106,7 +116,7 @@ namespace fmacias
         private void AddTask(Task task)
         {
             TaskObserver observableTask = TaskObserver.Create(task,logger);
-            observableTask.Subscribe(tasksProvider);
+            observableTask.Subscribe(Provider);
         }
         private Task Start(Action action)
         {
@@ -216,7 +226,7 @@ namespace fmacias
         /// see in the methods <see cref="Start(Action)"/>, <see cref="Start(Action{object}, object)"/>,
         /// <see cref="Continue(Action)"/> and <see cref="Continue(Action{object}, object)"/>. But 
         /// these status change is being observed pararell by the subcribers <see cref="TaskObserver"/> 
-        /// in the <see cref="TasksProvider"/>, so that the queue is able to track itself that the execution 
+        /// in the <see cref="provider"/>, so that the queue is able to track itself that the execution 
         /// of tasks is being performed properly as expected. This logic can also be reused to create another 
         /// async. Queue, making the component more scalable.
         /// 
@@ -234,7 +244,7 @@ namespace fmacias
             {
                 List<bool> performedObservableTasks = new List<bool>();
                 List<TaskObserver> completedTaskObservers = new List<TaskObserver>();
-                foreach (IObserver<Task> observer in this.tasksProvider.Observers)
+                foreach (IObserver<Task> observer in Provider.Observers)
                 {
                     TaskObserver taskObserver = (TaskObserver)observer;
                     bool observerCompleted = await taskObserver.TaskStatusCompletedTransition;
@@ -286,9 +296,9 @@ namespace fmacias
         /// </summary>
         public CancellationToken CancellationToken => CreateQueueCancelationToken();
         /// <summary>
-        /// Task to run provided by <see cref="TasksProvider"/>
+        /// Task to run provided by <see cref="provider"/>
         /// </summary>
-        public List<Task> Tasks => tasksProvider.Tasks;
+        public List<Task> Tasks => Provider.Tasks;
         /// <summary>
         /// Disposes and Removes finished and non subscribed Task from the list.
         /// </summary>
@@ -313,20 +323,20 @@ namespace fmacias
 
         private bool IsTaskDisposable(Task task)
         {
-            return (!tasksProvider.ObserverSubscritionExist(task) && TasksProvider.HasTaskBeenFinished(task));
+            return (!Provider.ObserverSubscritionExist(task) && TasksProvider.HasTaskBeenFinished(task));
         }
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
 
-                if (tasksProvider.ObserverSubscritionExist())
+                if (Provider.ObserverSubscritionExist())
                 {
                     Task<bool> completed = Complete();
                     completed.Wait();
                 }
 
-                if (tasksProvider.ObserverSubscritionExist())
+                if (Provider.ObserverSubscritionExist())
                 {
                     throw new FifoTaskQueueException("Any Observer should be present after completation.");
                 }

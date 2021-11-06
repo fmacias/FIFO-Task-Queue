@@ -73,7 +73,7 @@ namespace fmacias
                 TaskStatus currentStatus = task.Status;
                 logger.Debug(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
 
-                while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted) || (watch.ElapsedMilliseconds <= MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
+                while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted) && (watch.ElapsedMilliseconds <= MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
                 {
                     if (currentStatus != task.Status)
                     {

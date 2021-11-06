@@ -19,17 +19,16 @@ namespace fmacias
     internal class TasksProvider : IObservable<Task>
     {
         private List<IObserver<Task>> observers;
-        private readonly List<Task> tasks;
+        private List<Task> tasks = new List<Task>();
         private readonly ILogger logger;
-        private TasksProvider(List<Task> tasks, ILogger logger)
+        private TasksProvider(ILogger logger)
         {
             observers = new List<IObserver<Task>>();
-            this.tasks = tasks;
             this.logger = logger;
         }
-        public static TasksProvider Create(List<Task> tasks, ILogger logger)
+        public static TasksProvider Create(ILogger logger)
         {
-            return new TasksProvider(tasks,logger);
+            return new TasksProvider(logger);
         }
         public IDisposable Subscribe(IObserver<Task> observer)
         {

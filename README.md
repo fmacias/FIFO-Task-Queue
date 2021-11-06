@@ -31,7 +31,7 @@ In order to control the object instanciation and because this component does not
 
 # Queue Creation
 
-The queue requires a *TaskSheduler* and a *TasksProvider*, given by composition and Injected at constructor.
+This component ist tightly coupled with NLog. I may remove this dependency in another version.
 
 ## TaskSheduler
 The *TaskSheduler* associated with the main thread of the application
@@ -39,11 +39,11 @@ to interact with the GUI Controls or the one associated with the worker
 from with it was started.
 ```csharp
 TaskScheduler currentWorkerSheduler = TaskShedulerWraper.Create().FromCurrentWorker();
-TaskScheduler currentGuiSheduler = TaskShedulerWraper.Create().FromGUIWorker();
 ````
 
 ## TasksProvider
 The provider, which is the object that sends notifications to the observed Tasks.
+Visivility of this component has been set to internal and is not required at constructor anymore.
 Signatures:
 ```csharp
 public static TasksProvider Create(List<Task> tasks, ILogger logger)
@@ -53,7 +53,7 @@ public static TaskObserver Create(Task task, ILogger logger)
 ## FifoTaskQueue
 Signature:
 ```csharp
-public static FifoTaskQueue Create(TaskScheduler taskSheduler, TasksProvider tasksProvider, ILogger logger)
+public static FifoTaskQueue Create(TaskScheduler taskSheduler, ILogger logger)
 ```
 # Usage
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/DotNetCore/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")

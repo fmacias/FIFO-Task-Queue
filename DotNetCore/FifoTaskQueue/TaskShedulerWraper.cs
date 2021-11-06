@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace fmacias
 {
-    internal class TaskShedulerWraper : ITaskShedulerWraper
+    public class TaskShedulerWraper : ITaskShedulerWraper
     {
         private TaskScheduler taskSheduler;
         private TaskShedulerWraper() { }

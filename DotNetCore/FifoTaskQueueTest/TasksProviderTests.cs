@@ -35,7 +35,7 @@ namespace fmacias.Tests
         [Test()]
         public void TasksProviderTest()
         {
-            Assert.IsTrue(TasksProvider.Create(new List<Task>(),GetLogger()) is IObservable<Task>);
+            Assert.IsTrue(TasksProvider.Create(GetLogger()) is IObservable<Task>);
         }
 
         [Test()]
@@ -44,7 +44,7 @@ namespace fmacias.Tests
             List<Task> tasks = new List<Task>();
             Task task = Task.Run(() => { });
             tasks.Add(task);
-            TasksProvider provider = TasksProvider.Create(new List<Task>(),GetLogger());
+            TasksProvider provider = TasksProvider.Create(GetLogger());
             provider.AddTask(task);
             TaskObserver observer = TaskObserver.Create(task,GetLogger());
             observer.OnNext(task);
@@ -55,7 +55,7 @@ namespace fmacias.Tests
         [Test()]
         public void AddTaskTest()
         {
-            TasksProvider provider = TasksProvider.Create(new List<Task>(),GetLogger());
+            TasksProvider provider = TasksProvider.Create(GetLogger());
             provider.AddTask(Task.Run(() => { }));
             Assert.IsTrue(provider.Tasks.Count == 1);
         }
