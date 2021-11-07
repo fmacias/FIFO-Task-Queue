@@ -13,7 +13,7 @@ namespace WPF_Usage
         private IUnityContainer container;
         void App_Startup(object sender, StartupEventArgs e)
         {              
-            IUnityContainer container = new UnityContainer();
+            container = new UnityContainer();
         }
         void App_Exit(object sender, ExitEventArgs e)
         {
