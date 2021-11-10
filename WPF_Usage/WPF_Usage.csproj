@@ -11,7 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DotNetCore\FifoTaskQueue\FifoTaskQueue.csproj" />
+    <ProjectReference Include="..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj" />
+    <ProjectReference Include="..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\FifoTaskQueue.csproj" />
   </ItemGroup>
 
   <ItemGroup>

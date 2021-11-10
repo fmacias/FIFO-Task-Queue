@@ -11,6 +11,7 @@ using WPF_Usage.ExampleModule.ViewModel;
 using WPF_Usage.ExampleModule.Model;
 using System.ComponentModel;
 using WPF_Usage.ExampleModule.Presenter;
+using fmacias.Components.FifoTaskQueue;
 
 namespace WPF_Usage.ExampleModule.Tests
 {

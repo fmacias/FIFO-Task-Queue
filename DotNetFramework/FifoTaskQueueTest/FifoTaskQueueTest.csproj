@@ -50,17 +50,26 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\FifoTaskQueueTests.cs">
-      <Link>FifoTaskQueueTests.cs</Link>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\FifoTaskQueue.cs">
+      <Link>FifoTaskQueue.cs</Link>
     </Compile>
-    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TaskShedulerWraperTest.cs">
-      <Link>TaskShedulerWraperTest.cs</Link>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\FifoTaskQueueException.cs">
+      <Link>FifoTaskQueueException.cs</Link>
     </Compile>
-    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TasksObserverTests.cs">
-      <Link>TasksObserverTests.cs</Link>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\ITaskShedulerWraper.cs">
+      <Link>ITaskShedulerWraper.cs</Link>
     </Compile>
-    <Compile Include="..\..\DotNetCore\FifoTaskQueueTest\TasksProviderTests.cs">
-      <Link>TasksProviderTests.cs</Link>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\ObserverUnsubscriber.cs">
+      <Link>ObserverUnsubscriber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\TaskObserver.cs">
+      <Link>TaskObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\TaskShedulerWraper.cs">
+      <Link>TaskShedulerWraper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\TasksProvider.cs">
+      <Link>TasksProvider.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -94,7 +103,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\DotNetCore\FifoTaskQueueTest\NLog.config">
+    <None Include="..\..\Components\FifoTaskQueue\netstandard2.1\FifoTaskQueue\NLog.config">
       <Link>NLog.config</Link>
     </None>
     <None Include="packages.config" />

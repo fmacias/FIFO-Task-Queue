@@ -17,9 +17,5 @@
       <_Parameter1>$(AssemblyName)Test</_Parameter1>     
     </AssemblyAttribute>
   </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj" />
-  </ItemGroup>
 
 </Project>

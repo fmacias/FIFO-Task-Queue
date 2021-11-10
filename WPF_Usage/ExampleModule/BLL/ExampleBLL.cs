@@ -1,7 +1,7 @@
-﻿using System;
+﻿using fmacias.Components.FifoTaskQueue;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using fmacias;
 using Unity;
 
 namespace WPF_Usage.ExampleModule.BLL
