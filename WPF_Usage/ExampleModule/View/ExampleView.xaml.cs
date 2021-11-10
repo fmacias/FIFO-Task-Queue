@@ -23,9 +23,12 @@ namespace WPF_Usage
     /// </summary>
     public partial class ExampleView : Window, IExampleView
     {
+        private event EventHandler<RoutedEventArgs> ClickEventHandler;
+        private delegate void RoutedEventHandler(object sender, RoutedEventArgs e);
         public ExampleView()
         {
             InitializeComponent();
+            ClickEventHandler = HandleTaskFinished;
         }
         [Unity.Dependency]
         public IExamplePresenter ExamplePresenter { get; set; }
@@ -37,6 +40,15 @@ namespace WPF_Usage
                 lstNames.Items.Add(txtName.Text);
                 txtName.Clear();
             }
+        }
+        private void HandleTaskFinished(object sender, RoutedEventArgs e)
+        {
+            var o = sender;
+        }
+
+        private void lstNames_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }
