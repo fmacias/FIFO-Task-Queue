@@ -39,7 +39,7 @@ namespace fmacias.Tests
             Assert.IsInstanceOf<ITaskQueue>(CreateTaskQueue());
         }
         [Test()]
-        public void CompleteTest()
+        public void CompleteAtSyncMethodTest()
         {
             using (FifoTaskQueue queue = CreateTaskQueue())
             {
@@ -71,12 +71,9 @@ namespace fmacias.Tests
                 }));
             }
         }
-        /// <summary>
-        /// Run and dispose the queue.
-        /// FifoTaskQueue is one <see cref="IDisposable"/> object.
-        /// </summary>
+
         [Test()]
-        public async Task RunTheQueueItselfAtSynchronMethodTest()
+        public async Task CompleteAtAsyncMethod()
         {
             bool firstRun = false;
             bool secondRun = false;
@@ -115,7 +112,7 @@ namespace fmacias.Tests
             }
         }
         [Test()]
-        public async Task Run_WithParameters_RunOrderIsSequentialTest()
+        public async Task ActionsWithArguments()
         {
             bool firstRun = false;
             bool secondRun = false;
@@ -145,11 +142,10 @@ namespace fmacias.Tests
                     Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
                 }), new object());
                 bool done = await queue.Complete();
-                Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
             }
         }
         [Test()]
-        public async Task Run_WithParameters_ParametersAreUnmutableTest()
+        public async Task ActionsWithVariablesAreUnmutableTest()
         {
             int countIterations = 0;
             using (FifoTaskQueue queue = CreateTaskQueue())
@@ -232,7 +228,7 @@ namespace fmacias.Tests
             }
         }
         [Test()]
-        public async Task run_CancelTest()
+        public async Task CancelFirstActionTest()
         {
             using (FifoTaskQueue queue = CreateTaskQueue())
             {
@@ -254,7 +250,7 @@ namespace fmacias.Tests
             }
         }
         [Test()]
-        public async Task Run_WithParameters_ShareObject()
+        public async Task ActionsWithParamteresObjectsAreMutableTest()
         {
             object[] objectsToShare = new object[3];
             using (FifoTaskQueue queue = CreateTaskQueue())
@@ -288,7 +284,7 @@ namespace fmacias.Tests
             }
         }
         [Test()]
-        public async Task Complete_SecondTaskCanceledTest()
+        public async Task CancelSecondTaskTest()
         {
             using (FifoTaskQueue queue = CreateTaskQueue())
             {

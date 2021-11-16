@@ -34,25 +34,6 @@ namespace fmacias.Components.FifoTaskQueue
         private ITaskObserver<Task>.ErrorCallBackEventHandler ErrorCallBackDelegate;
         public Task ObservableTask => runningTask;
         public TaskObserverStatus Status { get; set; }
-
-        private void HandelnOnCompleteCallback(object sender)
-        {
-            CompleteCallBackDelegate(sender);
-        }
-        private void HandelnOnErrorCallback(object sender)
-        {
-            ErrorCallBackDelegate(sender);
-        }
-        public ITaskObserver<Task> OnCompleteCallback(ITaskObserver<Task>.CompleteCallBackEventHandler completeCallbackDelegate)
-        {
-            this.CompleteCallBackDelegate = completeCallbackDelegate;
-            return this;
-        }
-        public ITaskObserver<Task> OnErrorCallback(ITaskObserver<Task>.ErrorCallBackEventHandler errorCallbackDelegate)
-        {
-            this.ErrorCallBackDelegate = errorCallbackDelegate;
-            return this;
-        }
         private TaskObserver(ILogger logger)
         {
             Status = TaskObserverStatus.Created;
@@ -67,6 +48,17 @@ namespace fmacias.Components.FifoTaskQueue
         {
             return new TaskObserver(logger);
         }
+        public ITaskObserver<Task> OnCompleteCallback(ITaskObserver<Task>.CompleteCallBackEventHandler completeCallbackDelegate)
+        {
+            this.CompleteCallBackDelegate = completeCallbackDelegate;
+            return this;
+        }
+        public ITaskObserver<Task> OnErrorCallback(ITaskObserver<Task>.ErrorCallBackEventHandler errorCallbackDelegate)
+        {
+            this.ErrorCallBackDelegate = errorCallbackDelegate;
+            return this;
+        }
+ 
         public Task<bool> TaskStatusCompletedTransition => taskStatusCompletedTransition;
         public IDisposable Unsubscriber => unsubscriber;
         public Action Action { get => action; set => action = value; }
@@ -182,6 +174,14 @@ namespace fmacias.Components.FifoTaskQueue
                     break;
             }
             oSender.OnCompleted();
+        }
+        private void HandelnOnCompleteCallback(object sender)
+        {
+            CompleteCallBackDelegate(sender);
+        }
+        private void HandelnOnErrorCallback(object sender)
+        {
+            ErrorCallBackDelegate(sender);
         }
     }
 }

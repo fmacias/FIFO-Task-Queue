@@ -2,24 +2,20 @@
 
 FifoTaskQueue is a FIFO task queue for .Net Core 3.1 and .Net Core 5.0 and it is based on .Net Standard 2.1.
 
-It is intended to be a losely coupled componet to be used in scalable applications. Interfaces and the concrete implementation are located in diferent Modules,
-one with the interfaces and the other with the concrete implementation.
+It is intended to be a loosely coupled component to be used within scalable applications. Interfaces and the concrete implementation are located in different Modules, one with the interfaces and the other with the concrete implementation.
 
-It implements the Observer Patter applied to the Task for Logging and posible monitoring issues.
+It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
 
 Once a Task observation has been finalized, a callback to the Target object with the Observe its sent.
-This observer provides also the proccessing state of the observer and access to its Task as well.
+This observer provides also the processing state of the observer and access to its Task as well.
 
-The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context
-from wich it was created.
+The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from witch it was created.
 
-The primary goal of this component is to run asynchronous processed into the given queue secuentially.
+The primary goal of this component is to run asynchronous processed into the given queue sequentially.
 
-Each obeserved Task is subordinated to the previous one, so that, so that, canceling one, these subordinated 
-ones will also be canceled as long as the Actions manage the CancelationToken of the Queue.
+Each observed Task is subordinated to the previous one, so that, so that, canceling one, these subordinated ones will also be canceled as long as the Actions manage the CancelationToken of the Queue.
 
-It also observes the status of the processing Task for a tracking overview and
-supports task cancellation explicitly or after a given elapsed time.
+It also observes the status of the processing Task for a tracking overview and supports task cancellation explicitly or after a given elapsed time.
 
 Once a task has been cancelled of failed, these subordinated tasks will be
 canceled before starting.
@@ -82,7 +78,7 @@ Test Creation Extracted from Test
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/FIFO-Task-Queue/blob/master/DotNetCore/FifoTaskQueueTest/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
 # Example
-## Simple usage
+## Simple usage a a sync method
 ```csharp
         [Test()]
         public void CompleteAtSyncMethodTest()
@@ -198,7 +194,7 @@ Test Creation Extracted from Test
 2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 3 observation completed successfully
 ~~~
 
-## Action<object> with input parameters
+## Passing arguments to the actions(Action<object>)
 
 ```csharp
         [Test()]
@@ -251,8 +247,7 @@ Test Creation Extracted from Test
 2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 2 observation completed successfully
 2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 3 observation completed successfully
 ~~~
-## Variables as Arguments are  unmutable
-
+## Passing Variables as Arguments to the actions 
 ```csharp
          [Test()]
         public async Task ActionsWithVariablesAreUnmutableTest()
@@ -350,7 +345,7 @@ Test Creation Extracted from Test
 2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 11 observation completed successfully
 2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 12 observation completed successfully
 ~~~
-## Share the same object into each task. 
+## Passing objects as Arguments to the actions
 
 It could be use to access sequentially GUI-Controls, and interact with them.
 
