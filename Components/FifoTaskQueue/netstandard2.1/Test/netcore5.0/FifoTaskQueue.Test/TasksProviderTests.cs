@@ -42,23 +42,12 @@ namespace fmacias.Tests
         [Test()]
         public void SubscribeTest()
         {
-            List<Task> tasks = new List<Task>();
             Task task = Task.Run(() => { });
-            tasks.Add(task);
             TasksProvider provider = TasksProvider.Create(GetLogger());
-            provider.AddTask(task);
-            TaskObserver observer = TaskObserver.Create(task,GetLogger());
+            TaskObserver observer = TaskObserver.Create(GetLogger());
             observer.OnNext(task);
             IDisposable unsubscriber = provider.Subscribe(observer);
             Assert.IsTrue(provider.Subscribe(observer) is IDisposable);
-        }
-
-        [Test()]
-        public void AddTaskTest()
-        {
-            TasksProvider provider = TasksProvider.Create(GetLogger());
-            provider.AddTask(Task.Run(() => { }));
-            Assert.IsTrue(provider.Tasks.Count == 1);
         }
     }
 }

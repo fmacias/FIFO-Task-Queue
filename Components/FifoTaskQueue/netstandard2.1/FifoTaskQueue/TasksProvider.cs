@@ -19,12 +19,11 @@ namespace fmacias.Components.FifoTaskQueue
 {
     internal class TasksProvider : ITasksProvider
     {
-        private List<IObserver<Task>> observers;
-        private List<Task> tasks = new List<Task>();
+        private List<ITaskObserver<Task>> observers;
         private readonly ILogger logger;
         private TasksProvider(ILogger logger)
         {
-            observers = new List<IObserver<Task>>();
+            observers = new List<ITaskObserver<Task>>();
             this.logger = logger;
         }
         public static TasksProvider Create(ILogger logger)
@@ -34,16 +33,10 @@ namespace fmacias.Components.FifoTaskQueue
         public IDisposable Subscribe(IObserver<Task> observer)
         {
             if (!HasObserverBeenRegistered(observer))
-                observers.Add(observer);
-
-            tasks.Add(((ITaskObserver<Task>)observer).ObservableTask);
-            return ObserverUnsubscriber<Task>.Create(observers, observer);
+                observers.Add((ITaskObserver<Task>)observer);
+            return ObserverUnsubscriber<Task>.Create(observers, (ITaskObserver<Task>)observer);
         }
-        public List<Task> Tasks => tasks;
-        public void AddTask(Task task)
-        {
-            Tasks.Add(task);
-        }
+        public List<Task> Tasks => GetProcessingTasks();
         public IObserver<Task> GetRequiredObserverByTask(Task task)
         {
             return observers.First<IObserver<Task>>(
@@ -57,14 +50,25 @@ namespace fmacias.Components.FifoTaskQueue
         {
             return observers.Count > 0;
         }
-        private bool HasObserverBeenRegistered(IObserver<Task> observer)
-        {
-            return observers.Contains(observer);
-        }
         public static bool HasTaskBeenFinished(Task task)
         {
             return (task.IsCompleted || task.IsCanceled || task.IsFaulted);
         }
-        public List<IObserver<Task>> Observers => observers;
+        public List<ITaskObserver<Task>> Observers => observers;
+        private bool HasObserverBeenRegistered(IObserver<Task> observer)
+        {
+            return observers.Contains(observer);
+        }
+
+        private List<Task> GetProcessingTasks()
+        {
+            List<Task> processingTasks = new List<Task>();
+            observers.ForEach((observer) =>
+            {
+                if (!(observer.ObservableTask is null))
+                    processingTasks.Add(observer.ObservableTask);
+            });
+            return processingTasks;
+        }
     }
 }

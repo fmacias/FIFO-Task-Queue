@@ -35,13 +35,13 @@ namespace fmacias.Tests
         [Test()]
         public void TasksObserverCreateTest()
         {
-            Assert.IsTrue(TaskObserver.Create(Task.Run(() => { }), GetLogger()) is IObserver<Task>);
+            Assert.IsTrue(TaskObserver.Create(GetLogger()) is IObserver<Task>);
         }
 
         [Test()]
         public async Task OnCompleted_NotCompletedTest()
         {
-            TaskObserver observer = TaskObserver.Create(Task.Run(() => {  }), GetLogger());
+            TaskObserver observer = TaskObserver.Create(GetLogger());
             observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;
             Assert.IsFalse(completedTransition);
@@ -50,7 +50,7 @@ namespace fmacias.Tests
         public async Task OnCompleted_CompletedTest()
         {
             Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
-            TaskObserver observer = TaskObserver.Create(taskToObserve, GetLogger());
+            TaskObserver observer = TaskObserver.Create(GetLogger());
             observer.OnNext(taskToObserve);
             observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;

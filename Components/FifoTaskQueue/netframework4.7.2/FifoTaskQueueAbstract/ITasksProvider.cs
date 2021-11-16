@@ -18,6 +18,8 @@ namespace fmacias.Components.FifoTaskQueueAbstract
     {
         List<ITaskObserver<Task>> Observers { get; }
         List<Task> Tasks { get; }
+
+        void AddTask(Task task);
         IObserver<Task> GetRequiredObserverByTask(Task task);
         bool ObserverSubscritionExist();
         bool ObserverSubscritionExist(Task task);

@@ -45,6 +45,8 @@
     <Compile Include="IGuiContextFifoTaskQueue.cs" />
     <Compile Include="ITaskObserver.cs" />
     <Compile Include="ITaskQueue.cs" />
+    <Compile Include="ITasksProvider.cs" />
+    <Compile Include="ObserverStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

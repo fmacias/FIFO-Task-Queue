@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com > .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using fmacias.Components.FifoTaskQueueAbstract;
 using System;
 using System.Collections.Generic;
 
@@ -15,22 +16,22 @@ namespace fmacias.Components.FifoTaskQueue
 {
     internal class ObserverUnsubscriber<Task> : IDisposable
     {
-        private List<IObserver<Task>> _observers;
-        private IObserver<Task> _observer;
+        private List<ITaskObserver<Task>> observers;
+        private ITaskObserver<Task> observer;
 
-        private ObserverUnsubscriber(List<IObserver<Task>> observers, IObserver<Task> observer)
+        private ObserverUnsubscriber(List<ITaskObserver<Task>> observers, ITaskObserver<Task> observer)
         {
-            this._observers = observers;
-            this._observer = observer;
+            this.observers = observers;
+            this.observer = observer;
         }
-        internal static ObserverUnsubscriber<Task> Create(List<IObserver<Task>> observers, IObserver<Task> observer)
+        internal static ObserverUnsubscriber<Task> Create(List<ITaskObserver<Task>> observers, ITaskObserver<Task> observer)
         {
             return new ObserverUnsubscriber<Task>(observers, observer);
         }
         public void Dispose()
         {
-            if (_observers.Contains(_observer))
-                _observers.Remove(_observer);
+            if (observers.Contains(observer))
+                observers.Remove(observer);
         }
     }
 }

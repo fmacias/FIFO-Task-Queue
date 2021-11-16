@@ -20,13 +20,15 @@ namespace fmacias.Components.FifoTaskQueueAbstract
     public interface ITaskQueue: IDisposable
     {
         TaskScheduler TaskSheduler { get; }
-        ITaskQueue Run(Action<object> action, object parameters);
-        ITaskQueue Run(Action action);
+        ITaskQueue Run(ITaskObserver<Task> observer, params object[] parameters);
+        ITaskQueue Run(ITaskObserver<Task> observer);
         void CancelExecution();
         CancellationToken CancellationToken { get; }
         List<Task> Tasks { get; }
         void ClearUpTasks();
         Task<bool> Complete();
         Task<bool> CancelAfter(int taskCancelationTime);
+        ITaskObserver<Task> Define(Action action);
+        ITaskObserver<Task> Define(Action<object> actionParams);
     }
 }

@@ -20,27 +20,21 @@ namespace fmacias.Components.FifoTaskQueue
     internal class TaskObserver : ITaskObserver<Task>
     {
         private const int MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS = 10000;
-        private readonly Task task;
+        private Task runningTask;
         private readonly ILogger logger;
+        private Action action;
+        private Action<object> actionParams;
 
         private IDisposable unsubscriber;
         private Task<bool> taskStatusCompletedTransition = Task.Run(() => { return false; });
         private event EventHandler<long> ObservedEvent;
-        private event CompleteCallBackEventHandler CompleteCallBackEvent;
-        private event ErrorCallBackEventHandler ErrorCallBackEvent;
-
-
-        public delegate void CompleteCallBackEventHandler(object sender);
-        public delegate void ErrorCallBackEventHandler(object sender);
-
-        private CompleteCallBackEventHandler CompleteCallBackDelegate;
-        private ErrorCallBackEventHandler ErrorCallBackDelegate;
-
-        private Dictionary<Delegate, object> eventSubscriptions;
+        private event ITaskObserver<Task>.CompleteCallBackEventHandler CompleteCallBackEvent;
+        private event ITaskObserver<Task>.ErrorCallBackEventHandler ErrorCallBackEvent;
+        private ITaskObserver<Task>.CompleteCallBackEventHandler CompleteCallBackDelegate;
+        private ITaskObserver<Task>.ErrorCallBackEventHandler ErrorCallBackDelegate;
         private TaskObserverStatus status;
-        private bool Completed = false;
-        public Task ObservableTask => task;
-        public TaskObserverStatus Status { get; }
+        public Task ObservableTask => runningTask;
+        public TaskObserverStatus Status { get; set; }
 
         private void HandelnOnCompleteCallback(object sender)
         {
@@ -50,17 +44,18 @@ namespace fmacias.Components.FifoTaskQueue
         {
             ErrorCallBackDelegate(sender);
         }
-        public void OnCompleteCallback(CompleteCallBackEventHandler completeCallbackDelegate)
+        public ITaskObserver<Task> OnCompleteCallback(ITaskObserver<Task>.CompleteCallBackEventHandler completeCallbackDelegate)
         {
             this.CompleteCallBackDelegate = completeCallbackDelegate;
+            return this;
         }
-        public void OnErrorCallback(ErrorCallBackEventHandler errorCallbackDelegate)
+        public ITaskObserver<Task> OnErrorCallback(ITaskObserver<Task>.ErrorCallBackEventHandler errorCallbackDelegate)
         {
             this.ErrorCallBackDelegate = errorCallbackDelegate;
+            return this;
         }
-        private TaskObserver(Task task,ILogger logger)
+        private TaskObserver(ILogger logger)
         {
-            this.task = task;
             status = TaskObserverStatus.Created;
             ObservedEvent += HandleObserved;
             CompleteCallBackEvent += HandelnOnCompleteCallback;
@@ -69,21 +64,20 @@ namespace fmacias.Components.FifoTaskQueue
             ErrorCallBackDelegate = (object sender) => { };
             this.logger = logger;
         }
-        public static TaskObserver Create(Task task, ILogger logger)
+        public static TaskObserver Create(ILogger logger)
         {
-            return new TaskObserver(task,logger);
+            return new TaskObserver(logger);
         }
         public Task<bool> TaskStatusCompletedTransition => taskStatusCompletedTransition;
-
         public IDisposable Unsubscriber => unsubscriber;
-
+        public Action Action { get => action; set => action = value; }
+        public Action<object> ActionParams { get => actionParams; set => actionParams = value; }
         public void OnCompleted()
         {
-            Completed = true;
-            status = TaskObserverStatus.Completed;
             OnCompleteCallback();
+            Unsubscribe();
         }
-        public virtual void Subscribe(TasksProvider provider)
+        public virtual void Subscribe(ITasksProvider provider)
         {
             unsubscriber = provider.Subscribe(this);
         }
@@ -92,8 +86,7 @@ namespace fmacias.Components.FifoTaskQueue
             unsubscriber.Dispose();
             ObservedEvent -= HandleObserved;
             CompleteCallBackEvent -= HandelnOnCompleteCallback;
-            ErrorCallBackEvent -= ErrorCallBackEvent;
-
+            ErrorCallBackEvent -= HandelnOnErrorCallback;
         }
         public void OnError(Exception error)
         {
@@ -103,11 +96,8 @@ namespace fmacias.Components.FifoTaskQueue
         }
         public void OnNext(Task value)
         {
-            if (!Object.ReferenceEquals(task, value))
-            {
-                return;
-            }
-            logger.Debug(string.Format("Task id: {0} Will be observe. State: {1}", task.Id, task.Status));
+            runningTask = value;
+            logger.Debug(string.Format("Task id: {0} Will be observe. State: {1}", runningTask.Id, runningTask.Status));
             status = TaskObserverStatus.Observed;
             PollingTaskStatusTransition();
         }
@@ -115,26 +105,34 @@ namespace fmacias.Components.FifoTaskQueue
         {
             taskStatusCompletedTransition.Wait();
             taskStatusCompletedTransition.Dispose();
-            taskStatusCompletedTransition = Task.Run(()=> 
+            taskStatusCompletedTransition = Task.Run(() =>
             {
-                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-                TaskStatus currentStatus = task.Status;
-                logger.Debug(string.Format("Task id: {0} initial status {1}", task.Id, task.Status));
-
-                while (!(task.IsCompleted || task.IsCanceled || task.IsFaulted) && (watch.ElapsedMilliseconds <= MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
+                bool processed = false;
+                try
                 {
-                    if (currentStatus != task.Status)
+                    System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+                    TaskStatus currentStatus = runningTask.Status;
+                    logger.Debug(string.Format("Task id: {0} initial status {1}", runningTask.Id, runningTask.Status));
+                    while (!(runningTask.IsCompleted || runningTask.IsCanceled || runningTask.IsFaulted) && (watch.ElapsedMilliseconds <= MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
                     {
-                        logger.Debug(string.Format("Task id: {0} Status transition to {1}", task.Id, task.Status));
-                        currentStatus = task.Status;
+                        if (currentStatus != runningTask.Status)
+                        {
+                            logger.Debug(string.Format("Task id: {0} Status transition to {1}", runningTask.Id, runningTask.Status));
+                            currentStatus = runningTask.Status;
+                        }
                     }
+                    long executionTime = watch.ElapsedMilliseconds;
+                    logger.Debug(string.Format("Task id: {0},  final status {1}, Duration: {2}", runningTask.Id, runningTask.Status, executionTime));
+                    watch.Stop();
+                    processed = true;
+                    OnPollingTaskStatusTransitionFinishied(executionTime);
                 }
-                long executionTime = watch.ElapsedMilliseconds;
-                logger.Debug(string.Format("Task id: {0},  final status {1}, Duration: {2}", task.Id, task.Status, executionTime));
-                watch.Stop();
-                OnPollingTaskStatusTransitionFinishied(executionTime);
-                return true;
-            }); 
+                catch (Exception e)
+                {
+                    OnErrorCallback();
+                }
+                return processed;
+            });
         }
         protected virtual void OnPollingTaskStatusTransitionFinishied(long executionTime)
         {
@@ -147,7 +145,7 @@ namespace fmacias.Components.FifoTaskQueue
         }
         protected void OnCompleteCallback()
         {
-            CompleteCallBackEventHandler raiseEvent = CompleteCallBackEvent;
+            ITaskObserver<Task>.CompleteCallBackEventHandler raiseEvent = CompleteCallBackEvent;
 
             if (raiseEvent != null)
             {
@@ -156,7 +154,7 @@ namespace fmacias.Components.FifoTaskQueue
         }
         protected void OnErrorCallback()
         {
-            ErrorCallBackEventHandler raiseEvent = ErrorCallBackEvent;
+            ITaskObserver<Task>.ErrorCallBackEventHandler raiseEvent = ErrorCallBackEvent;
 
             if (raiseEvent != null)
             {
@@ -165,28 +163,26 @@ namespace fmacias.Components.FifoTaskQueue
         }
         private void HandleObserved(object sender, long executionTime)
         {
-            switch (this.ObservableTask.Status)
+            ITaskObserver<Task> oSender = (ITaskObserver<Task>)sender;
+            switch (oSender.ObservableTask.Status)
             {
-                case (TaskStatus.RanToCompletion):
-                    this.OnCompleted();
+                case TaskStatus.RanToCompletion:
+                    oSender.Status = TaskObserverStatus.Completed;
                     break;
-                case (TaskStatus.Running):
-                    this.status = TaskObserverStatus.ExecutionTimeExceded;
-                    this.OnCompleted();
+                case TaskStatus.Running:
+                    oSender.Status = TaskObserverStatus.ExecutionTimeExceded;
                     break;
-                case (TaskStatus.Faulted):
-                    this.status = TaskObserverStatus.CompletedWithErrors;
-                    this.OnCompleted();
+                case TaskStatus.Faulted:
+                    oSender.Status = TaskObserverStatus.CompletedWithErrors;
                     break;
                 case (TaskStatus.Canceled):
-                    this.status = TaskObserverStatus.Canceled;
-                    this.OnCompleted();
+                    oSender.Status = TaskObserverStatus.Canceled;
                     break;
                 default:
-                    this.status = TaskObserverStatus.Unkonown;
-                    this.OnCompleted();
+                    this.Status = TaskObserverStatus.Unkonown;
                     break;
             }
+            oSender.OnCompleted();
         }
     }
 }

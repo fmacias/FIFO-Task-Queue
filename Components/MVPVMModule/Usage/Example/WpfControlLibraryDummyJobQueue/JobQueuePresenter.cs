@@ -73,13 +73,6 @@ namespace WpfControlLibraryDummyJobQueue
                 {
                     string uri = (progressBarCollection[i] as FifoProgressBar).JobURI;
                     ProgressBar progressBar = ExtractProcessBar(progressBarCollection, i);
-                    guiContextFifoTaskQueue.Run((args) =>
-                    {
-                        object[] inputparams = (object[])args;
-                        ProgressBar progressBar = (ProgressBar)inputparams[0];
-                        ProgressBar(progressBar);
-                        ProcessHttpRequestJob((string)inputparams[1]);
-                    }, progressBar, uri);
                 }
                 await guiContextFifoTaskQueue.CancelAfter(10000);
             });
