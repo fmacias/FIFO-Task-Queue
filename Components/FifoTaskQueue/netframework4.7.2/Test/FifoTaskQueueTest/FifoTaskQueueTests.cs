@@ -20,6 +20,7 @@ using System.Runtime.CompilerServices;
 using NLog;
 using Moq;
 using fmacias.Components.FifoTaskQueue;
+using fmacias.Components.FifoTaskQueueAbstract;
 
 namespace fmacias.Tests
 {
@@ -229,49 +230,14 @@ namespace fmacias.Tests
             Assert.IsTrue(asyncAction.Method.IsDefined(typeof(AsyncStateMachineAttribute), false));
             Assert.IsFalse(syncAction.Method.IsDefined(typeof(AsyncStateMachineAttribute), false));
         }
-        /// <summary>
-        /// Queue is composed by three tasks.
-        /// The first two will be run asynchronously and the third one not.
-        /// Given that the first two ones are slow, the third one will be finished before
-        /// the previous two async operations were finished.
-        /// 
-        /// Each run will be runned secuentially, but as previous ones are async and take longer, will be finished later.
-        /// </summary>
         [Test()]
-        public async Task Run_DownloadAsyncTest()
+        public void  Run_DownloadAsyncTest()
         {
             FifoTaskQueue queue = CreateTaskQueue();
             bool downloaded1 = false;
             bool downloaded2 = false;
-            queue.Run(async () =>
-            {
-                using (Task<bool> downloading = Download(2000))
-                {
-                    downloaded1 = await downloading;
-                }
-                Assert.IsTrue(downloaded1, "First async action performed.");
-            });
-            queue.Run(async () =>
-            {
-                using (Task<bool> downloading = Download(2000))
-                {
-                    downloaded2 = await downloading;
-                }
-                Assert.IsTrue(downloaded2, "Second async action performed.");
-            });
-            queue.Run(() =>
-            {
-                Assert.IsTrue(downloaded1 == false && downloaded2 == false);
-            });
-            bool done = await queue.Complete();
-            //wait for download finalization at async methods.
-            Task.Delay(4500).Wait();
-            Assert.IsTrue(queue.Tasks[0].IsCompleted, "all task completed");
-            Assert.IsTrue(queue.Tasks[1].IsCompleted, "all task completed");
-            Assert.IsTrue(queue.Tasks[2].IsCompleted, "all task completed");
-            Assert.IsTrue(downloaded1, "First Async. Task performed.");
-            Assert.IsTrue(downloaded2, "Second Async. Task performed.");
-            queue.Dispose();
+            Assert.Throws<FifoTaskQueueException>(() => { queue.Run(async () => { }); }, 
+                "Async Methods do not make sense at the queue and are not allowed.");
         }
         [Test()]
         public async Task run_CancelTest()
@@ -384,8 +350,8 @@ namespace fmacias.Tests
             await queue.CancelAfter(elapsedTimeToCancelQueue);
             Assert.IsTrue(queue.Tasks[0].IsCompleted, "First Task Completed");
             Assert.IsTrue(queue.Tasks[1].IsCompleted && taskExecuted == false, "second Task completed but broken.");
-            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[2].IsCanceled, "Last tasks canceled");
-            Assert.IsTrue(queue.Tasks[3].IsCanceled && queue.Tasks[3].IsCanceled, "Last tasks canceled");
+            Assert.IsTrue(queue.Tasks[2].IsCanceled && queue.Tasks[2].IsCanceled, "third tasks canceled");
+            Assert.IsTrue(queue.Tasks[3].IsCanceled && queue.Tasks[3].IsCanceled, "fourth tasks canceled");
             queue.ClearUpTasks();
             queue.Dispose();
         }

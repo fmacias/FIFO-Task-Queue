@@ -4,16 +4,15 @@ using System.Text;
 
 namespace fmacias.Components.EventAggregator
 {
-    public class UIEventSubscriptor : EventSubscriptorAbstract
+    public class UIEventSubscriptor : EventSubscriptorAbstract, IUIEventSubscriptor
     {
-        public UIEventSubscriptor(IEventSubscriptable eventAggregator, object uiObject, string eventName):base(eventAggregator)
+        public UIEventSubscriptor(IEventSubscriptable eventAggregator) : base(eventAggregator) { }
+        public IEventSubscriptor AddEventHandler<TDelegate>(TDelegate handler, string eventName, object uiObject)
         {
-            if (uiObject.GetType().GetEvent(eventName) == null)
-                throw new EventAggregatorException(
-                    string.Format("Object Type {0} is not subscriptable for event {1}.", typeof(IProcessEvent).ToString(), "Event")
-                );
-            this.triegger = uiObject;
             this.eventName = eventName;
+            this.trieggerEventSource = uiObject;
+            this.AddEventHandler<TDelegate>(handler);
+            return this;
         }
     }
 }

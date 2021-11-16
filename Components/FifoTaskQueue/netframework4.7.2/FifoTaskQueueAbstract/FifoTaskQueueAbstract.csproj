@@ -41,6 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ICurrentContextFifoTaskQueue.cs" />
+    <Compile Include="IGuiContextFifoTaskQueue.cs" />
+    <Compile Include="ITaskObserver.cs" />
     <Compile Include="ITaskQueue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

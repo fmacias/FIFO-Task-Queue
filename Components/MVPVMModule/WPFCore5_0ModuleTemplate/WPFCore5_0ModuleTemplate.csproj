@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Unity.Abstractions" Version="5.11.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\EventAggregator\netstandard2.1\EventAggregator\EventAggregator.csproj" />
+    <ProjectReference Include="..\..\FifoTaskQueue\netstandard2.1\FifoTaskQueue\FifoTaskQueue.csproj" />
+    <ProjectReference Include="..\netstandard2.1\MVPVMModule.Abstract\MVPVMModule.Abstract\MVPVMModule.Abstract.csproj" />
+    <ProjectReference Include="..\netstandard2.1\MVPVMModule\MVPVMModule.csproj" />
+  </ItemGroup>
+
+</Project>

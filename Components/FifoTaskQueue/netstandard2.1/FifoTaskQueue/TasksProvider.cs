@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com > .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using fmacias.Components.FifoTaskQueueAbstract;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace fmacias.Components.FifoTaskQueue
 {
-    internal class TasksProvider : IObservable<Task>
+    internal class TasksProvider : ITasksProvider
     {
         private List<IObserver<Task>> observers;
         private List<Task> tasks = new List<Task>();
@@ -33,10 +34,9 @@ namespace fmacias.Components.FifoTaskQueue
         public IDisposable Subscribe(IObserver<Task> observer)
         {
             if (!HasObserverBeenRegistered(observer))
-            {
                 observers.Add(observer);
-            }
-            tasks.Add(((TaskObserver)observer).ObservableTask);
+
+            tasks.Add(((ITaskObserver<Task>)observer).ObservableTask);
             return ObserverUnsubscriber<Task>.Create(observers, observer);
         }
         public List<Task> Tasks => tasks;

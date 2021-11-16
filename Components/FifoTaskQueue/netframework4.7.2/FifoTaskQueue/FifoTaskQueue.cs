@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using fmacias.Components.FifoTaskQueueAbstract;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace fmacias.Components.FifoTaskQueue
         private CancellationTokenSource cancellationTokenSource;
         private TasksProvider tasksProvider;
         #region Constructor
-        private FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
+        protected FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.logger = logger;
@@ -81,6 +82,15 @@ namespace fmacias.Components.FifoTaskQueue
             };
             return actionTask;
         }
+        private static bool IsAsycn(Action<object> action)
+        {
+            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
+        }
+        private static bool IsAsycn(Action action)
+        {
+            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
+        }
+
         private Action<Task, object> AssociateActionToTask(Action<object> action)
         {
             Action<Task, object> actionTask = (task, parameters) =>
@@ -167,17 +177,30 @@ namespace fmacias.Components.FifoTaskQueue
 
         public ITaskQueue Run(Action action)
         {
-            Task runningTask;
+            Task queuedTask;
+
             if (!AreTasksAvailable())
             {
-                runningTask = Start(action);
+                queuedTask = Start(action);
             }
             else
             {
-                runningTask = Continue(action);
+                queuedTask = Continue(action);
             }
-            ObserveTask(runningTask);
+            RefuseAsync(action);
+            ObserveTask(queuedTask);
             return this;
+        }
+
+        private void RefuseAsync(Action action)
+        {
+            if (IsAsycn(action))
+                throw new FifoTaskQueueException("Async Methods do not make sense at the queue and are not allowed.");
+        }
+        private void RefuseAsync(Action<object> action)
+        {
+            if (IsAsycn(action))
+                throw new FifoTaskQueueException("Asyc Methods do not make sense at the queue and are not allowed.");
         }
         /// <summary>
         /// Start Action with parameters and Returns the queue
@@ -188,16 +211,17 @@ namespace fmacias.Components.FifoTaskQueue
         /// <returns>ITaskQueue</returns>
         public ITaskQueue Run(Action<object> action, object parameters)
         {
-            Task runningTask;
+            Task queuedTask;
             if (!AreTasksAvailable())
             {
-                runningTask = this.Start(action, parameters);
+                queuedTask = this.Start(action, parameters);
             }
             else
             {
-                runningTask = Continue(action, parameters);
+                queuedTask = Continue(action, parameters);
             }
-            ObserveTask(runningTask);
+            RefuseAsync(action);
+            ObserveTask(queuedTask);
             return this;
         }
         /// <summary>

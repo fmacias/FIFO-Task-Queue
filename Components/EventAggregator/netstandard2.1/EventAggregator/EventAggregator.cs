@@ -5,9 +5,26 @@ namespace fmacias.Components.EventAggregator
 {
     public class EventAggregator:IEventSubscriptable
     {
+        private readonly IProcessEventFactory processEventFactory;
+        private readonly IProcessEventSubscriptorFactory processEventSubscriptorFactory;
+        private readonly IUIEventSubscriptorFactory uiEventSubscriptorFactory;
 
         List<IEventSubscriptor> eventSubscriptions = new List<IEventSubscriptor>();
+        public EventAggregator(IProcessEventFactory processEventFactory, IProcessEventSubscriptorFactory processEventSubscriptorFactory, IUIEventSubscriptorFactory uiEventSubscriptorFactory)
+        {
+            this.processEventFactory = processEventFactory;
+            this.processEventSubscriptorFactory = processEventSubscriptorFactory;
+            this.uiEventSubscriptorFactory = uiEventSubscriptorFactory;
+        }
+
         public List<IEventSubscriptor> Subscriptions => eventSubscriptions;
+
+        public IProcessEventFactory ProcessEventFactory => processEventFactory;
+
+        public IProcessEventSubscriptorFactory ProcessEventSubscriptorFactory => processEventSubscriptorFactory;
+
+        public IUIEventSubscriptorFactory UIEventSubscriptorFactory => uiEventSubscriptorFactory;
+
         public List<IEventSubscriptor> GetEventSubscriptions(object triegger, string eventName)
         {
             return this.eventSubscriptions.FindAll(

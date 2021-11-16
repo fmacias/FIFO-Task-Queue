@@ -7,7 +7,7 @@ namespace fmacias.Components.EventAggregator
 {
     public abstract class EventSubscriptorAbstract: IEventSubscriptor
     {
-        protected object triegger;
+        protected object trieggerEventSource;
         protected EventInfo eventInfo;
         protected Delegate handler;
         protected IEventUnsubscriber unsubscriber;
@@ -20,7 +20,7 @@ namespace fmacias.Components.EventAggregator
 
         public string EventName => eventInfo.Name;
 
-        public object TrieggerObject => triegger;
+        public object TrieggerObject => trieggerEventSource;
 
         public IEventUnsubscriber Unsubscriber => unsubscriber;
 
@@ -31,22 +31,20 @@ namespace fmacias.Components.EventAggregator
         /// <typeparam name="TDelegate"></typeparam>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public IEventSubscriptor AddEventHandler<TDelegate>(TDelegate handler)
+        protected IEventSubscriptor AddEventHandler<TDelegate>(TDelegate handler)
         {
             if (eventInfo == null)
             {
-                eventInfo = triegger.GetType().GetEvent(eventName);
+                eventInfo = trieggerEventSource.GetType().GetEvent(eventName);
                 this.handler = handler as Delegate;
-                eventInfo.AddEventHandler(triegger, this.handler);
+                eventInfo.AddEventHandler(trieggerEventSource, this.handler);
             }
-                
-                
             return this;
         }
         public void Unsubscribe()
         {
             if (!(eventInfo == null))
-                eventInfo.RemoveEventHandler(triegger, this.handler);
+                eventInfo.RemoveEventHandler(trieggerEventSource, this.handler);
 
             unsubscriber.Dispose();
         }

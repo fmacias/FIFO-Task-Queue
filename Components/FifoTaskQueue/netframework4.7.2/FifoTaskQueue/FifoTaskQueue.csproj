@@ -49,9 +49,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CurrentContextFifoTaskQueue.cs" />
     <Compile Include="FifoTaskQueue.cs" />
     <Compile Include="FifoTaskQueueException.cs" />
+    <Compile Include="GuiContextFifoTaskQueue.cs" />
     <Compile Include="ITaskShedulerWraper.cs" />
+    <Compile Include="ObserverStatus.cs" />
     <Compile Include="ObserverUnsubscriber.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TaskObserver.cs" />
@@ -59,7 +62,6 @@
     <Compile Include="TasksProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="NLog.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

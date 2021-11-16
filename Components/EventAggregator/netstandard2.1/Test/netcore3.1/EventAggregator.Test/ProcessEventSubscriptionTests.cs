@@ -18,14 +18,14 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void ProcessEventSubscriptionTest()
         {
-            IEventSubscriptable eventAgregator = new EventAggregator();
-            TestProcessEvent trieggerObject = new TestProcessEvent();
-            IEventSubscriptor subscriptor = new ProcessEventSubscriptor(eventAgregator,trieggerObject);
-            subscriptor.AddEventHandler<IProcessEvent.ProcessEventHandler>(test_handler);
+            IEventSubscriptable eventAggregator = new EventAggregator(new ProcessEventFactory(), new ProcessEventSubscriptorFactory(), new UIEventSubscriptorFactory());
+            IProcessEvent trieggerObject = eventAggregator.ProcessEventFactory.Create<TestProcessEvent>();
+            IProcessEventSubscriptor subscriptor = new ProcessEventSubscriptor(eventAggregator);
+            subscriptor.AddEventHandler<IProcessEvent.ProcessEventHandler>(test_handler, trieggerObject);
             trieggerObject.Publish();
-            Assert.IsTrue(eventAgregator.Subscriptions.Count == 1);
+            Assert.IsTrue(eventAggregator.Subscriptions.Count == 1);
             subscriptor.Unsubscribe();
-            Assert.IsTrue(eventAgregator.Subscriptions.Count == 0);
+            Assert.IsTrue(eventAggregator.Subscriptions.Count == 0);
         }
     }
 

@@ -8,6 +8,7 @@
  * @E-Mail      fmaciasruano@gmail.com .
  * @license    https://github.com/fmacias/Scheduler/blob/master/Licence.txt
  */
+using fmacias.Components.FifoTaskQueueAbstract;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace fmacias.Components.FifoTaskQueue
         private CancellationTokenSource cancellationTokenSource;
         private TasksProvider tasksProvider;
         #region Constructor
-        private FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
+        protected FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.logger = logger;
@@ -65,45 +66,32 @@ namespace fmacias.Components.FifoTaskQueue
         {
             Action<Task> actionTask = task =>
             {
-                try
-                {
-                    action();
-                }
-                catch (TaskCanceledException)
-                {
-                    Console.WriteLine("\nTasks cancelled: timed out.\n");
-                }
-                catch (AggregateException ae)
-                {
-                    TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
-                    Console.WriteLine(string.Format("Task {0} Canceled.", exception.Task.Id));
-                }
+                action();
             };
             return actionTask;
         }
+        private static bool IsAsycn(Action<object> action)
+        {
+            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
+        }
+        private static bool IsAsycn(Action action)
+        {
+            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
+        }
+
         private Action<Task, object> AssociateActionToTask(Action<object> action)
         {
             Action<Task, object> actionTask = (task, parameters) =>
             {
-                try
-                {
-                    action(parameters);
-                }
-                catch (TaskCanceledException)
-                {
-                    Console.WriteLine("\nTasks cancelled: timed out.\n");
-                }
-                catch (AggregateException ae)
-                {
-                    TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
-                    Console.WriteLine(string.Format("Task {0} Canceled.", exception.Task.Id));
-                }
+                action(parameters);
             };
             return actionTask;
         }
-        private void ObserveTask(Task task)
+        private ITaskObserver<Task> ObserveTask(Task task)
         {
+            ITaskObserver<Task> observer = (ITaskObserver<Task>)Provider.GetRequiredObserverByTask(task);
             Provider.GetRequiredObserverByTask(task).OnNext(task);
+            return observer;
         }
         private CancellationToken CreateQueueCancelationToken()
         {
@@ -165,19 +153,32 @@ namespace fmacias.Components.FifoTaskQueue
         /// <param name="action">Action</param>
         /// <returns>ITaskQueue</returns>
 
-        public ITaskQueue Run(Action action)
+        public ITaskObserver<Task> Run(Action action)
         {
-            Task runningTask;
+            Task queuedTask;
+
             if (!AreTasksAvailable())
             {
-                runningTask = Start(action);
+                queuedTask = Start(action);
             }
             else
             {
-                runningTask = Continue(action);
+                queuedTask = Continue(action);
             }
-            ObserveTask(runningTask);
-            return this;
+            RefuseAsync(action);
+            Complete().Wait();
+            return ObserveTask(queuedTask);
+        }
+
+        private void RefuseAsync(Action action)
+        {
+            if (IsAsycn(action))
+                throw new FifoTaskQueueException("Async Methods do not make sense at the queue and are not allowed.");
+        }
+        private void RefuseAsync(Action<object> action)
+        {
+            if (IsAsycn(action))
+                throw new FifoTaskQueueException("Asyc Methods do not make sense at the queue and are not allowed.");
         }
         /// <summary>
         /// Start Action with parameters and Returns the queue
@@ -186,19 +187,20 @@ namespace fmacias.Components.FifoTaskQueue
         /// <param name="action"><![CDATA[Action<object>]]></param>
         /// <param name="parameters">object</param>
         /// <returns>ITaskQueue</returns>
-        public ITaskQueue Run(Action<object> action, object parameters)
+        public ITaskObserver<Task> Run(Action<object> action, params object[] parameters)
         {
-            Task runningTask;
+            Task queuedTask;
             if (!AreTasksAvailable())
             {
-                runningTask = this.Start(action, parameters);
+                queuedTask = this.Start(action, parameters);
             }
             else
             {
-                runningTask = Continue(action, parameters);
+                queuedTask = Continue(action, parameters);
             }
-            ObserveTask(runningTask);
-            return this;
+            RefuseAsync(action);
+            Complete().Wait();
+            return ObserveTask(queuedTask);
         }
         /// <summary>
         /// Forces queue cancelation of tasks
@@ -253,11 +255,6 @@ namespace fmacias.Components.FifoTaskQueue
                     string success = observerCompleted ? "successfully" : "unsuccessfully";
                     logger.Debug(String.Format("Task {0} observation completed {1}", taskObserver.ObservableTask.Id, success));
                 }
-                completedTaskObservers.ForEach(taskObserver =>
-                {
-                    taskObserver.Unsubscribe();
-                    logger.Debug(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
-                });
                 return !(Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
             }
             catch (TaskCanceledException)
@@ -334,6 +331,7 @@ namespace fmacias.Components.FifoTaskQueue
                 {
                     Task<bool> completed = Complete();
                     completed.Wait();
+                    UnsubscribeObservers().Wait();
                 }
 
                 if (Provider.ObserverSubscritionExist())
@@ -347,14 +345,45 @@ namespace fmacias.Components.FifoTaskQueue
                 {
                     throw new FifoTaskQueueException("Any Task should be present after observer completation.");
                 }
-                this.cancellationTokenSource.Dispose();
+                this.cancellationTokenSource?.Dispose();
             }
+        }
+        private async Task<bool> UnsubscribeObservers()
+        {
+            List<TaskObserver> completedTaskObservers = new List<TaskObserver>();
+            foreach (IObserver<Task> observer in Provider.Observers)
+            {
+                TaskObserver taskObserver = (TaskObserver)observer;
+                bool observerCompleted = await taskObserver.TaskStatusCompletedTransition;
+                completedTaskObservers.Add(taskObserver);
+            }
+            completedTaskObservers.ForEach(taskObserver =>
+            {
+                taskObserver.Unsubscribe();
+                logger.Debug(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
+            });
+            return true;
         }
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        public async Task<ITaskObserver<Task>> Process(Action<object> action, params object[] parameters)
+        {
+            ITaskObserver<Task> observer = this.Run(action, parameters);
+            await Complete();
+            return observer;
+        }
+
+        public async Task<ITaskObserver<Task>> Process(Action action)
+        {
+            ITaskObserver<Task> observer = this.Run(action);
+            await Complete();
+            return observer;
+        }
+
         ~FifoTaskQueue()
         {
             Dispose(false);

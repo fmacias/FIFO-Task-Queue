@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\EventAggregatorAbstract\EventAggregatorAbstract.csproj" />
     <ProjectReference Include="..\..\..\EventAggregator\EventAggregator.csproj" />
   </ItemGroup>
 

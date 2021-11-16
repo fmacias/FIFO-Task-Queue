@@ -15,7 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace fmacias.Components.FifoTaskQueue
+namespace fmacias.Components.FifoTaskQueueAbstract
 {
     public interface ITaskQueue: IDisposable
     {

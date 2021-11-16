@@ -15,13 +15,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace fmacias.Components.FifoTaskQueue
+namespace fmacias.Components.FifoTaskQueueAbstract
 {
     public interface ITaskQueue: IDisposable
     {
         TaskScheduler TaskSheduler { get; }
-        ITaskQueue Run(Action<object> action, object parameters);
-        ITaskQueue Run(Action action);
+        ITaskObserver<Task> Run(Action<object> action, params object[] parameters);
+        ITaskObserver<Task> Run(Action action);
+        Task<ITaskObserver<Task>> Process(Action<object> action, params object[] parameters);
+        Task<ITaskObserver<Task>> Process(Action action);
         void CancelExecution();
         CancellationToken CancellationToken { get; }
         List<Task> Tasks { get; }

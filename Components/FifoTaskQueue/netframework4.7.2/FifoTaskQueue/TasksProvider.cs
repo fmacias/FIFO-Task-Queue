@@ -33,9 +33,8 @@ namespace fmacias.Components.FifoTaskQueue
         public IDisposable Subscribe(IObserver<Task> observer)
         {
             if (!HasObserverBeenRegistered(observer))
-            {
                 observers.Add(observer);
-            }
+
             tasks.Add(((TaskObserver)observer).ObservableTask);
             return ObserverUnsubscriber<Task>.Create(observers, observer);
         }

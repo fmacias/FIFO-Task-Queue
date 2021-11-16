@@ -18,14 +18,14 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void UIEventSubscriptorTest()
         {
-            IEventSubscriptable eventAgregator = new EventAggregator();
+            IEventSubscriptable eventAggregator = new EventAggregator(new ProcessEventFactory(), new ProcessEventSubscriptorFactory(), new UIEventSubscriptorFactory());
             Button trieggerObject = new Button();
-            IEventSubscriptor subscriptor = new UIEventSubscriptor(eventAgregator,trieggerObject, "Click");
-            subscriptor.AddEventHandler<Button.Handler>(test_Button_handler);
+            IUIEventSubscriptor subscriptor = new UIEventSubscriptor(eventAggregator);
+            subscriptor.AddEventHandler<Button.Handler>(test_Button_handler, "Click", trieggerObject);
             trieggerObject.OnClick();
-            Assert.IsTrue(eventAgregator.Subscriptions.Count == 1);
+            Assert.IsTrue(eventAggregator.Subscriptions.Count == 1);
             subscriptor.Unsubscribe();
-            Assert.IsTrue(eventAgregator.Subscriptions.Count == 0);
+            Assert.IsTrue(eventAggregator.Subscriptions.Count == 0);
         }
     }
 }
