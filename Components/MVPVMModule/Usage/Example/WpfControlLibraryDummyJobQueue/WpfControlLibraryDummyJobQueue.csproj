@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\WPFCore5_0ModuleTemplate\WPFCore5_0ModuleTemplate.csproj" />
+    <ProjectReference Include="..\WpfControlProgressBar\WpfControlProgressBar.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="DummyFifoJobQueue.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+</Project>
