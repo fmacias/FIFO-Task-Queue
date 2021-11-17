@@ -85,16 +85,7 @@ namespace WpfControlLibraryDummyJobQueue
         {
             Task.Factory.StartNew((progressBar) =>
             {
-                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-                int i = 1;
-                ((ProgressBar)progressBar).Minimum = 1;
-                ((ProgressBar)progressBar).Maximum = 100;
-                double maxtime = watch.ElapsedMilliseconds + 10000;
-                while (watch.ElapsedMilliseconds<= 10000)
-                {
-                    ((ProgressBar)progressBar).Value = (100 / maxtime) * watch.ElapsedMilliseconds;
-                }
-                watch.Stop();
+                //todo
             }, progressBar, guiContextFifoTaskQueue.CancellationToken, TaskCreationOptions.None, guiContextFifoTaskQueue.TaskSheduler);
         }
 
