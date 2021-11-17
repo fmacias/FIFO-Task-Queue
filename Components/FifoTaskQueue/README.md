@@ -2,6 +2,8 @@
 
 FifoTaskQueue is a FIFO task queue for .Net Core 3.1 and .Net Core 5.0 and it is based on .Net Standard 2.1.
 
+The primary goal of this component is to run asynchronous processes into the given queue sequentially.
+
 It is intended to be a loosely coupled component to be used within scalable applications. Interfaces and the concrete implementation are located in different Modules, one with the interfaces and the other with the concrete implementation.
 
 It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
