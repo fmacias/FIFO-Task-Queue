@@ -9,9 +9,9 @@ It is intended to be a loosely coupled component to be used within scalable appl
 It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
 
 Once a Task observation has been finalized, a callback to the Target object its Observer is sent.
-This observer provides also the processing state of the observer and access to its Task as well.
+This observer provides its processing state and acesses to its Task as well.
 
-The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from witch it was created.
+The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from which was created.
 
 Each observed Task is subordinated to the previous one, so that, canceling one, these subordinated ones will also be canceled as long as the Actions manage the CancelationToken of the Queue.
 
