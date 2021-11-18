@@ -27,17 +27,23 @@ namespace fmacias.Components.FifoTaskQueue.Tests
     [TestFixture()]
     public class FifoTaskQueueTests
     {
+        public class SharedObject{
+            public string propertyOne { get; set; }
+        }
+
         private FifoTaskQueue CreateTaskQueue()
         {
             return FifoTaskQueue.Create(
                 TaskShedulerWraper.Create().FromCurrentWorker(),
                 LogManager.GetCurrentClassLogger());
         }
+
         [Test()]
         public void CreateTest()
         {
             Assert.IsInstanceOf<FifoTaskQueueAbstract.ITaskQueue>(CreateTaskQueue());
         }
+
         [Test]
         public void DefineTest()
         {
@@ -55,37 +61,68 @@ namespace fmacias.Components.FifoTaskQueue.Tests
                 Assert.IsInstanceOf<IObserver>(observer2);
                 Assert.IsInstanceOf<ITaskObserver>(observer2);
             }
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                var observer2 = queue.Define<Action<int>>((args) => { });
+                Assert.IsInstanceOf<IActionObserver<Action<int>>>(observer2);
+                Assert.IsInstanceOf<IObserver>(observer2);
+                Assert.IsInstanceOf<ITaskObserver>(observer2);
+            }
+        }
+        [Test]
+        public void test()
+        {
+            Action<bool> a = (boolValue) => { };
+            Action<object> b = (booValue) => {
+                a(true);
+            };
+            
         }
         [Test]
         public void RunTest()
         {
             using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define<Action>(() => { }).OnCompleteCallback((object sender) =>
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) =>
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
                 }));
 
-                queue.Run(queue.Define<Action>(() => { }).OnCompleteCallback((object sender) => {
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
                 }));
             }
         }
+
         [Test()]
         public void CompleteAtSyncMethodTest()
         {
             using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define<Action>(() => { Task.Delay(500).Wait();}).OnCompleteCallback((object sender) =>{
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(500).Wait();
+                }).OnCompleteCallback((object sender) =>
+                {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
                 }));
 
-                queue.Run(queue.Define<Action>(() => { Task.Delay(500).Wait(); }).OnCompleteCallback((object sender) =>
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(500).Wait(); 
+                }).OnCompleteCallback((object sender) =>
                 {
                     Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
                 }));
 
-                queue.Run(queue.Define<Action>(() => { Task.Delay(500).Wait(); }).OnCompleteCallback((object sender) =>
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(500).Wait(); 
+                }).OnCompleteCallback((object sender) =>
                 {
                     Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
                 }));
@@ -93,106 +130,101 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         }
 
         [Test()]
-        public async Task CompleteAtAsyncMethod()
+        public async Task VariablesNotPassedAsReferenceToTheActions()
         {
             bool firstRun = false;
             bool secondRun = false;
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define<Action>(() =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    firstRun = true;
-                    Assert.IsTrue(firstRun == true && secondRun == false);
+                    Assert.IsTrue(args[0] == false && args[1] == false);
+                    args[0] = true;
+                    args[1] = true;
                 }).OnCompleteCallback((object sender) =>
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
+                }), firstRun, secondRun);
 
-                queue.Run(queue.Define<Action>(() =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    secondRun = true;
-                    Assert.IsTrue(firstRun == true && secondRun == true);
+                    Assert.IsTrue(args[0] == false && args[1] == false);
                 }).OnCompleteCallback((object sender) =>
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-                
-                queue.Run(queue.Define<Action>(() => 
-                {
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
+                }), firstRun, secondRun);
                 bool done = await queue.Complete();
             }
         }
-        /// <summary>
-        /// Input variables passed as params are treated as variables.
-        /// 
-        /// </summary>
-        /// <returns></returns>
         [Test()]
-        public async Task ArgumentsForVariablesAreUnmutable()
+        public async Task CompleteObserverBeforeProcessingSecondOne()
         {
-            int intNumber = 0;
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            bool firstRun = false;
+            bool secondRun = false;
+
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define<Action<object>>((args) =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    int intNumber = (int)inputParamteres[0];
-                    intNumber++;
-                    Assert.AreEqual(1, intNumber++);
-                }), intNumber);
+                    Assert.IsTrue(args[0] == false && args[1] == false);
+                    args[0] = true;
+                    args[1] = true;
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
+                
+                await queue.Complete();
+                firstRun = true;
 
-                queue.Run(queue.Define<Action<object>>((args) =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    int intNumber = (int)inputParamteres[0];
-                    intNumber++;
-                    Assert.AreEqual(1, intNumber++);
-                }), intNumber);
-
-                queue.Run(queue.Define<Action<object>>((args) =>
+                    Assert.IsTrue(args[0] == true && args[1] == false);
+                }).OnCompleteCallback((object sender) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    int intNumber = (int)inputParamteres[0];
-                    intNumber++;
-                    Assert.AreEqual(1, intNumber++);
-                }), intNumber);
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
                 bool done = await queue.Complete();
             }
         }
+        
         /// <summary>
         /// Tasks were not finshed yet
         /// </summary>
         [Test()]
         public void TasksNotFinishedTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
                 queue.Run(queue.Define<Action>(() => 
                 { 
                     Task.Delay(5000).Wait(); 
+
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
                 }));
 
                 queue.Run(queue.Define<Action>(() => 
                 { 
                     Task.Delay(2000).Wait(); 
+
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
                 }));
 
                 queue.Run(queue.Define<Action>(() => 
                 { 
                     Task.Delay(2000).Wait(); 
+
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
                 }));
 
                 Assert.IsTrue(queue.Tasks[0].IsCompleted == false &&
@@ -200,49 +232,20 @@ namespace fmacias.Components.FifoTaskQueue.Tests
                 queue.Tasks[2].IsCompleted == false);
             }
         }
-        /// <summary>
-        /// Tasks are finished really fast and are finished before disposing.
-        /// They will be cleard on diposing.
-        /// </summary>
-        [Test()]
-        public async Task TasksFinishedTest()
-        {
-            using (FifoTaskQueue queue = CreateTaskQueue())
-            {
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-                bool done = await queue.Complete();
-                Assert.IsTrue(queue.Tasks.Count == 0);
-            }
-        }
+        
         [Test()]
         public async Task CancelFirstActionTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
                 queue.Run(queue.Define<Action>(() => 
                 {
                     Task.Delay(5000, queue.CancellationToken).Wait();
+
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.CompletedWithErrors, (sender as IObserver).Status);
+
                 }));
 
                 queue.Run(queue.Define<Action>(() => 
@@ -250,6 +253,7 @@ namespace fmacias.Components.FifoTaskQueue.Tests
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+
                 }));
 
                 queue.Run(queue.Define<Action>(() => 
@@ -257,54 +261,69 @@ namespace fmacias.Components.FifoTaskQueue.Tests
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+
                 }));
                 bool done = await queue.CancelAfter(2000);
             }
         }
+
         [Test()]
-        public async Task ActionsWithParamteresObjectsAreMutableTest()
+        public async Task AddObjectToTheActions()
         {
-            object[] objectsToShare = new object[3];
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            SharedObject objectsToShare1 = new SharedObject();
+            SharedObject objectsToShare2 = new SharedObject();
+            SharedObject objectsToShare3 = new SharedObject();
+            SharedObject objectsToShare4 = new SharedObject();
+
+
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define<Action<object>>((args) => 
+                queue.Run(queue.Define<Action<SharedObject>>((sharedObject) => 
                 {
-                    ((object[])args)[0] = "a";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at first iteration");
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), objectsToShare);
+                    sharedObject.propertyOne = "value object 1";
 
-                queue.Run(queue.Define<Action<object>>((args) => 
-                {
-                    ((object[])args)[1] = "b";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at second iteration");
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), objectsToShare);
 
-                queue.Run(queue.Define<Action<object>>((args) => 
+                }), objectsToShare1);
+
+                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
                 {
-                    ((object[])args)[2] = "c";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at third iteration");
+                    sharedObjects[1].propertyOne = "value object 2";
+                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
+                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
+
                 }).OnCompleteCallback((object sender) => 
                 {
                     Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), objectsToShare);
+
+                }), objectsToShare1,objectsToShare2);
+
+                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
+                {
+                    sharedObjects[2].propertyOne = "value object 3";
+                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
+                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
+                    Assert.AreEqual("value object 3", sharedObjects[2].propertyOne);
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }), objectsToShare1,objectsToShare2,objectsToShare3);
 
                 bool done = await queue.Complete();
-                Assert.AreEqual("a b c", String.Join(" ", objectsToShare));
+                Assert.AreEqual("value object 1", objectsToShare1.propertyOne);
+                Assert.AreEqual("value object 2", objectsToShare2.propertyOne);
+                Assert.AreEqual("value object 3", objectsToShare3.propertyOne);
             }
         }
+
         [Test()]
         public async Task CancelSecondTaskTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
                 queue.Run(queue.Define<Action>(() => 
                 { 

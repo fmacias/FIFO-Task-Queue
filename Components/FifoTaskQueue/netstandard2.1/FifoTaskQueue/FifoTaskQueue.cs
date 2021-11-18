@@ -23,7 +23,7 @@ namespace fmacias.Components.FifoTaskQueue
     /// <see cref="T:System.Threading.Tasks.TaskScheduler" /> according to the FIFO(First Input 
     /// first output) concept.
     /// </summary>
-    public class FifoTaskQueue : FifoTaskQueueAbstract.ITaskQueue
+    public class FifoTaskQueue : ITaskQueue
     {
         private readonly TaskScheduler taskScheduler;
         private readonly ILogger logger;
@@ -59,26 +59,46 @@ namespace fmacias.Components.FifoTaskQueue
             return SubscribeObserver<TAction>().SetAction(action);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="TAction"></typeparam>
-        /// <param name="observer"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public ITaskQueue Run<TAction>(IActionObserver<TAction> observer, params object[] args)
+        public ITaskQueue Run<TAction>(IActionObserver<TAction> observer)
+        {
+            RunActionAtTask<TAction,object>(observer);
+            return this;
+        }
+        public ITaskQueue Run<TAction,TArgs>(IActionObserver<TAction> observer, params TArgs[] args)
+        {
+            RunActionAtTask<TAction, TArgs>(observer,args);
+            return this;
+        }
+
+        private ITaskQueue ____RunActionAtTask<TAction>(IActionObserver<TAction> observer)
         {
             Task queuedTask;
 
             if (!AreTasksAvailable())
-                queuedTask = Start(observer, args);
+                queuedTask = Start(observer);
             else
-                queuedTask = Continue(observer, args);
+                queuedTask = Continue(observer);
+
+            observer.OnNext(queuedTask);
+            return this;
+        }
+        private ITaskQueue RunActionAtTask<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args =null)
+        {
+            Task queuedTask;
+
+            if (!AreTasksAvailable())
+                queuedTask = (args is null) ? Start(observer) : Start<TAction,TArgs>(observer, args);
+            else
+                queuedTask = (args is null) ? Continue(observer) : Continue<TAction,TArgs>(observer, args);
 
             observer.OnNext(queuedTask);
             return this;
         }
 
+        public ITaskQueue RunX<TAction,TParams>(IActionObserver<TAction> observer, params TParams[] args)
+        {
+            return this;
+        }
         /// <summary>
         /// Awaitable method to await processing the queue whenever is required at async methods.
         /// </summary>
@@ -192,22 +212,31 @@ namespace fmacias.Components.FifoTaskQueue
             return Tasks.Last();
         }
 
-        private Action<Task> AssociateActionToTask(Action action)
+        private Action<Task> ActionTaskNoParams<TAction>(IActionObserver<TAction> actionObserver)
         {
             Action<Task> actionTask = task =>
             {
-                action();
+                ExecutorWithParams<TAction>.Create(actionObserver).Execute();
             };
             return actionTask;
         }
 
-        private Action<Task, object> AssociateActionToTask(Action<object> action)
+        private Action<Task,object> ActionTaskParams<TAction,TArgs>()
         {
-            Action<Task, object> actionTask = (task, args) =>
+            Action<Task,object> actionTask = (task, args) =>
             {
-                action(args);
+                ExecutorWithParams<TAction, TArgs> queuRun = args as ExecutorWithParams<TAction, TArgs>;
+                queuRun.Execute();
             };
             return actionTask;
+        }
+        private Action<object> ActionParams<TAction,TArgs>()
+        {
+            Action<object> ao = (args)=> {
+                ExecutorWithParams<TAction, TArgs> queuRun = args as ExecutorWithParams<TAction, TArgs>;
+                queuRun.Execute();
+            };
+            return ao;
         }
 
         private CancellationToken CreateQueueCancelationToken()
@@ -219,38 +248,56 @@ namespace fmacias.Components.FifoTaskQueue
             return cancellationTokenSource.Token;
         }
 
-        private Task StartNew<TAction>(IActionObserver<TAction> observer, params object[] args)
+        
+
+        private Task Start<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
         {
-            Task task;
-
-            if (args.Length == 0)
-                task = Task.Factory.StartNew(observer.GetAction() as Action, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
-            else
-                task = Task.Factory.StartNew(observer.GetAction() as Action<object>, args, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
-
-            return task;
+            return StartNew<TAction,TArgs>(observer, args);
+        }
+        private Task Start<TAction>(IActionObserver<TAction> observer)
+        {
+            return StartNew(observer);
+        }
+        private Task StartNew<TAction>(IActionObserver<TAction> observer)
+        {
+            return Task.Factory.StartNew(
+                observer.GetAction() as Action, 
+                CreateQueueCancelationToken(), 
+                TaskCreationOptions.None, 
+                taskScheduler);
+        }
+        private Task StartNew<TAction, TArgs>(IActionObserver<TAction> observer, TArgs[] args)
+        {
+            return Task.Factory.StartNew(
+                ActionParams<TAction, TArgs>(),
+                ExecutorWithParams<TAction,TArgs>.Create(observer,args),
+                CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
+        }
+        private Task ContinueWith<TAction>(IActionObserver<TAction> observer)
+        {
+            return GetLastTask().ContinueWith(
+                ActionTaskNoParams(observer), 
+                CreateQueueCancelationToken(), 
+                TaskContinuationOptions.None, 
+                taskScheduler);
+        }
+        private Task ContinueWith<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
+        {
+            return GetLastTask().ContinueWith(
+                ActionTaskParams<TAction,TArgs>(),
+                ExecutorWithParams<TAction, TArgs>.Create(observer, args), 
+                CreateQueueCancelationToken(), 
+                TaskContinuationOptions.None, 
+                taskScheduler);
         }
 
-        private Task Start<TAction>(IActionObserver<TAction> observer, params object[] args)
+        private Task Continue<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
         {
-            return StartNew(observer, args);
+            return ContinueWith<TAction, TArgs>(observer, args);
         }
-
-        private Task ContinueWith<TAction>(IActionObserver<TAction> observer, params object[] args)
+        private Task Continue<TAction>(IActionObserver<TAction> observer)
         {
-            Task task;
-
-            if (args.Length == 0)
-                task = GetLastTask().ContinueWith(AssociateActionToTask(observer.GetAction() as Action), CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
-            else
-                task = GetLastTask().ContinueWith(AssociateActionToTask(observer.GetAction() as Action<object>), args, CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
-
-            return task;
-        }
-
-        private Task Continue<TAction>(IActionObserver<TAction> observer, params object[] args)
-        {
-            return ContinueWith(observer, args);
+            return ContinueWith(observer);
         }
 
         /// <summary>

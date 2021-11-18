@@ -122,7 +122,6 @@ namespace fmacias.Components.FifoTaskQueue
             this.action = action;
             return this;
         }
-
         /// <summary>
         /// 
         /// </summary>
