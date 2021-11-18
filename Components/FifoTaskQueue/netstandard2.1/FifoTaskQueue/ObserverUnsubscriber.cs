@@ -16,15 +16,15 @@ namespace fmacias.Components.FifoTaskQueue
 {
     internal class ObserverUnsubscriber<Task> : IDisposable
     {
-        private List<ITaskObserver<Task>> observers;
-        private ITaskObserver<Task> observer;
+        private List<IObserver<Task>> observers;
+        private IObserver<Task> observer;
 
-        private ObserverUnsubscriber(List<ITaskObserver<Task>> observers, ITaskObserver<Task> observer)
+        private ObserverUnsubscriber(List<IObserver<Task>> observers, IObserver<Task> observer)
         {
             this.observers = observers;
             this.observer = observer;
         }
-        internal static ObserverUnsubscriber<Task> Create(List<ITaskObserver<Task>> observers, ITaskObserver<Task> observer)
+        internal static ObserverUnsubscriber<Task> Create(List<IObserver<Task>> observers, IObserver<Task> observer)
         {
             return new ObserverUnsubscriber<Task>(observers, observer);
         }

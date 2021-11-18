@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 using NLog;
 using Moq;
 using fmacias.Components.FifoTaskQueue;
-namespace fmacias.Tests
+namespace fmacias.Components.FifoTaskQueue.Tests
 {
     [TestFixture()]
     public class TasksObserverTests
@@ -35,14 +35,13 @@ namespace fmacias.Tests
         [Test()]
         public void TasksObserverCreateTest()
         {
-            Assert.IsTrue(TaskObserver.Create(GetLogger()) is IObserver<Task>);
+            Assert.IsTrue(TaskObserver<Action>.Create(GetLogger()) is IObserver<Task>);
         }
 
         [Test()]
         public async Task OnCompleted_NotCompletedTest()
         {
-            TaskObserver observer = TaskObserver.Create(GetLogger());
-            observer.OnCompleted();
+            TaskObserver<Action> observer = TaskObserver<Action>.Create(GetLogger());
             bool completedTransition = await observer.TaskStatusCompletedTransition;
             Assert.IsFalse(completedTransition);
         }
@@ -50,9 +49,8 @@ namespace fmacias.Tests
         public async Task OnCompleted_CompletedTest()
         {
             Task taskToObserve = Task.Run(() => { Task.Delay(2000).Wait(); });
-            TaskObserver observer = TaskObserver.Create(GetLogger());
+            TaskObserver<Action> observer = TaskObserver<Action>.Create(GetLogger());
             observer.OnNext(taskToObserve);
-            observer.OnCompleted();
             bool completedTransition = await observer.TaskStatusCompletedTransition;
             Assert.IsTrue(completedTransition);
         }

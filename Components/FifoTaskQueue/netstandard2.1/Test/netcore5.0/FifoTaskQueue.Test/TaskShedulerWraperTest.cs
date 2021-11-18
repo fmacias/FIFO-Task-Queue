@@ -18,7 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using fmacias.Components.FifoTaskQueue;
 
-namespace fmacias.Tests
+namespace fmacias.Components.FifoTaskQueue.Tests
 {
     [TestFixture()]
     class TaskShedulerWraperTest

@@ -13,7 +13,6 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,186 +23,83 @@ namespace fmacias.Components.FifoTaskQueue
     /// <see cref="T:System.Threading.Tasks.TaskScheduler" /> according to the FIFO(First Input 
     /// first output) concept.
     /// </summary>
-    public class FifoTaskQueue : ITaskQueue
+    public class FifoTaskQueue : FifoTaskQueueAbstract.ITaskQueue
     {
         private readonly TaskScheduler taskScheduler;
         private readonly ILogger logger;
         private CancellationTokenSource cancellationTokenSource;
         private TasksProvider tasksProvider;
+
         #region Constructor
+
         protected FifoTaskQueue(TaskScheduler taskScheduler, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.logger = logger;
         }
+
         public static FifoTaskQueue Create(TaskScheduler taskSheduler, ILogger logger)
         {
             return new FifoTaskQueue(taskSheduler, logger);
         }
+
         #endregion
-        #region private
-        private TasksProvider Provider
-        {
-            get
-            {
+        #region Interface Implementation
 
-                if (tasksProvider == null)
-                    tasksProvider = TasksProvider.Create(logger);
-
-                return tasksProvider;
-            }
-        }
-        private bool AreTasksAvailable()
-        {
-            return (Tasks.Count > 0);
-        }
-        private Task GetLastTask()
-        {
-            return Tasks.Last();
-        }
-        private Action<Task> AssociateActionToTask(Action action)
-        {
-            Action<Task> actionTask = task =>
-            {
-                action();
-            };
-            return actionTask;
-        }
-        private static bool IsAsycn(Action<object> action)
-        {
-            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
-        }
-        private static bool IsAsycn(Action action)
-        {
-            return action.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
-        }
-
-        private Action<Task, object> AssociateActionToTask(Action<object> action)
-        {
-            Action<Task, object> actionTask = (task, parameters) =>
-            {
-                action(parameters);
-            };
-            return actionTask;
-        }
-        private ITaskObserver<Task> ObserveTask(Task task)
-        {
-            ITaskObserver<Task> observer = (ITaskObserver<Task>)Provider.GetRequiredObserverByTask(task);
-            Provider.GetRequiredObserverByTask(task).OnNext(task);
-            return observer;
-        }
-        private CancellationToken CreateQueueCancelationToken()
-        {
-            if (cancellationTokenSource == null)
-            {
-                cancellationTokenSource = new CancellationTokenSource();
-            }
-            return cancellationTokenSource.Token;
-        }
-        private void AddTask(Task task)
-        {
-            ObserveTask(task);
-        }
-        private Task Start(Action action)
-        {
-            Task task = Task.Factory.StartNew(action, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
-            return task;
-        }
-        private Task Start(Action<object> action, object paramters)
-        {
-            Task task = Task.Factory.StartNew(action, paramters, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
-            return task;
-        }
-        private Task Continue(Action action)
-        {
-            Task task = GetLastTask().ContinueWith(AssociateActionToTask(action), CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
-            return task;
-        }
-        private Task Continue(Action<object> action, object paramters)
-        {
-            Task task = GetLastTask().ContinueWith(AssociateActionToTask(action), paramters, CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
-            return task;
-        }
-        #endregion
         /// <summary>
-        /// The Sheduler <see cref="T:System.Threading.Tasks.TaskScheduler" />
-        /// <seealso cref="TaskShedulerWraper"/>
+        /// Usage: 
+        ///     queue.Define<Action>([Action])
+        ///     queue.Define<Action<object>>([Action<object>])
         /// </summary>
-        public TaskScheduler TaskSheduler
+        /// <typeparam name="TAction"></typeparam>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public IActionObserver<TAction> Define<TAction>(TAction action)
         {
-            get { return taskScheduler; }
+            return SubscribeObserver<TAction>().SetAction(action);
         }
+
         /// <summary>
-        /// Start Action without parameters and Returns the queue
-        /// as a fluent interface.
+        /// 
         /// </summary>
-        /// <param name="action">Action</param>
-        /// <returns>ITaskQueue</returns>
-        public ITaskObserver<Task> Define(Action action)
-        {
-            ITaskObserver<Task> observableTask = SubscribeObserver();
-            observableTask.Action = action;
-            return observableTask;
-        }
-        public ITaskObserver<Task> Define(Action<object> actionParams)
-        {
-            ITaskObserver<Task> observableTask = SubscribeObserver();
-            observableTask.ActionParams = actionParams;
-            return observableTask;
-        }
-        private ITaskObserver<Task> SubscribeObserver()
-        {
-            ITaskObserver<Task> observableTask = TaskObserver.Create(logger);
-            observableTask.Subscribe(Provider);
-            return observableTask;
-        }
-        
-        public ITaskQueue Run(ITaskObserver<Task> observer)
+        /// <typeparam name="TAction"></typeparam>
+        /// <param name="observer"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public ITaskQueue Run<TAction>(IActionObserver<TAction> observer, params object[] args)
         {
             Task queuedTask;
 
             if (!AreTasksAvailable())
-            {
-                queuedTask = Start(observer.Action);
-            }
+                queuedTask = Start(observer, args);
             else
-            {
-                queuedTask = Continue(observer.Action);
-            }
+                queuedTask = Continue(observer, args);
+
             observer.OnNext(queuedTask);
             return this;
         }
+
         /// <summary>
-        /// Start Action with parameters and Returns the queue
-        /// as a fluent interface.
+        /// Awaitable method to await processing the queue whenever is required at async methods.
         /// </summary>
-        /// <param name="action"><![CDATA[Action<object>]]></param>
-        /// <param name="parameters">object</param>
-        /// <returns>ITaskQueue</returns>
-        public ITaskQueue Run(ITaskObserver<Task> observer, params object[] parameters)
+        /// <returns></returns>
+        public async Task<bool> Complete()
         {
-            Task queuedTask;
-            if (!AreTasksAvailable())
-            {
-                queuedTask = this.Start(observer.ActionParams, parameters);
-            }
-            else
-            {
-                queuedTask = Continue(observer.ActionParams, parameters);
-            }
-            observer.OnNext(queuedTask);
-            return this;
+            List<bool> observers = await CompleteQueueObservation();
+            return !HaveObserversBeenPerformed(observers);
         }
-        private void RefuseAsync(Action action)
+
+        /// <summary>
+        /// Cancel Queue after given elapsed time.
+        /// </summary>
+        /// <param name="tasksCancelationTime"></param>
+        /// <returns></returns>
+        public async Task<bool> CancelAfter(int tasksCancelationTime)
         {
-            if (IsAsycn(action))
-                throw new FifoTaskQueueException("Async Methods do not make sense at the queue and are not allowed.");
+            cancellationTokenSource.CancelAfter(tasksCancelationTime);
+            return await Complete();
         }
-        private void RefuseAsync(Action<object> action)
-        {
-            if (IsAsycn(action))
-                throw new FifoTaskQueueException("Asyc Methods do not make sense at the queue and are not allowed.");
-        }
+
         /// <summary>
         /// Forces queue cancelation of tasks
         /// Unit Test are provided at its Test Class.
@@ -216,88 +112,147 @@ namespace fmacias.Components.FifoTaskQueue
             }
             catch { }
         }
+
         /// <summary>
-        /// Observes the completation of the queue, it means, that the las task has been finished.
-        /// 
-        /// You can run this method whenever you want and so many times you want. 
-        /// For example after each <see cref="Run(Action)"/> or 
-        /// <see cref="Run(Action{object}, object)"/>, or after the ones that takes too long.
-        /// 
-        /// 
-        /// Explanation:
-        /// -------------------------------------------------------------------------------------------------
-        /// Running or Planned Task are being managed by the <see cref="Task.Factory"/> as you can 
-        /// see in the methods <see cref="Start(Action)"/>, <see cref="Start(Action{object}, object)"/>,
-        /// <see cref="Continue(Action)"/> and <see cref="Continue(Action{object}, object)"/>. But 
-        /// these status change is being observed pararell by the subcribers <see cref="TaskObserver"/> 
-        /// in the <see cref="provider"/>, so that the queue is able to track itself that the execution 
-        /// of tasks is being performed properly as expected. This logic can also be reused to create another 
-        /// async. Queue, making the component more scalable.
-        /// 
-        /// This method can be invoked so many times you need. For example after definition 
-        /// of each <see cref="Run(Action)"/> or <see cref="Run(Action{object}, object)"/> methods.
-        /// 
-        /// Tests provided at its UnitTest Class.
-        /// <see cref="Run(Action)"/>
+        /// The Sheduler <see cref="T:System.Threading.Tasks.TaskScheduler" />
+        /// <seealso cref="TaskShedulerWraper"/>
         /// </summary>
-        /// <param name="taskCancelationTime"></param>
-        /// <returns></returns>
-        public async Task<bool> Complete()
+        public TaskScheduler TaskSheduler
         {
-            try
-            {
-                List<bool> performedObservableTasks = new List<bool>();
-                List<TaskObserver> completedTaskObservers = new List<TaskObserver>();
-                List<ITaskObserver<Task>> avoidListModificationOnCallbackslist = Provider.Observers.ToList();
-                foreach (IObserver<Task> observer in avoidListModificationOnCallbackslist)
-                {
-                    TaskObserver taskObserver = (TaskObserver)observer;
-                    bool observerCompleted = await taskObserver.TaskStatusCompletedTransition;
-                    performedObservableTasks.Add(observerCompleted);
-                    completedTaskObservers.Add(taskObserver);
-                    string success = observerCompleted ? "successfully" : "unsuccessfully";
-                    logger.Debug(String.Format("Task {0} observation completed {1}", taskObserver.ObservableTask.Id, success));
-                }
-                return !(Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
-            }
-            catch (TaskCanceledException)
-            {
-                logger.Debug("\nTasks cancelled: timed out.\n");
-            }
-            catch (AggregateException ae)
-            {
-                TaskCanceledException exception = ae.InnerException as TaskCanceledException ?? throw ae;
-                logger.Debug(string.Format("Task {0} Canceled.", exception.Task.Id));
-            }
-            return true;
+            get { return taskScheduler; }
         }
-        /// <summary>
-        /// Planificate the Queue cancelation after the elapsed time given at taskCancelationTime if provided
-        /// or after the default elapsed time givent at <see cref="QUEUE_CANCELATION_ELAPSED_TIME_MILISECONDS"/>.
-        /// 
-        /// Explanation
-        /// -----------
-        /// If the task takes longer, it will be abandoned. The observer will leave the obeservation of the task 
-        /// , but wont be removed. Whenever it happens, you should provide to this task the queue CancelationToken to be able
-        /// carry those kind of long tasks to a canceled or to a faulted status.
-        /// 
-        /// </summary>
-        /// <param name="tasksCancelationTime"></param>
-        /// <returns></returns>
-        public async Task<bool> CancelAfter(int tasksCancelationTime)
-        {
-            cancellationTokenSource.CancelAfter(tasksCancelationTime);
-            return await Complete();
-        }
+
         /// <summary>
         /// CancelationToken<see cref="CancellationToken"/> used to manage a cascade cancelation of running or planned tasks.
         /// Tests provided at its UnitTest Class.
         /// </summary>
         public CancellationToken CancellationToken => CreateQueueCancelationToken();
+
         /// <summary>
         /// Task to run provided by <see cref="provider"/>
         /// </summary>
-        public List<Task> Tasks => Provider.Tasks;
+        public List<Task> Tasks => Provider.GetProcessingTasks();
+
+        #endregion
+
+        #region private
+        private static bool HaveObserversBeenPerformed(List<bool> performedObservableTasks)
+        {
+            return (Array.IndexOf(performedObservableTasks.ToArray(), false) > -1);
+        }
+        private TaskObserver<TAction> SubscribeObserver<TAction>()
+        {
+            var observableTask = TaskObserver<TAction>.Create(logger);
+            observableTask.Subscribe(Provider);
+            return observableTask;
+        }
+
+        private async Task<List<bool>> CompleteQueueObservation()
+        {
+            var performedObservableTasks = new List<bool>();
+            var oberversCopyToAvoidErrorOnCallbackOperations = Provider.Observers.ToList();
+
+            foreach (IObserver<Task> observer in oberversCopyToAvoidErrorOnCallbackOperations)
+            {
+                ///Check null because observer could be unsubscribed in between by another process.
+                if (!(observer is null))
+                {
+                    bool observed = await observeTransition((ITaskObserver)observer);
+                    performedObservableTasks.Add(observed);
+                }
+            }
+            return performedObservableTasks;
+        }
+
+        private async Task<bool> observeTransition(ITaskObserver observer)
+        {
+            bool observerCompleted = await observer.TaskStatusCompletedTransition;
+            logger.Debug(String.Format("Task {0} observation completed {1}", observer.ObservableTask?.Id, observerCompleted ? "successfully" : "unsuccessfully"));
+            return observerCompleted;
+        }
+
+        private TasksProvider Provider
+        {
+            get
+            {
+                if (tasksProvider == null)
+                    tasksProvider = TasksProvider.Create(logger);
+
+                return tasksProvider;
+            }
+        }
+
+        private bool AreTasksAvailable()
+        {
+            return Tasks.Count > 0;
+        }
+
+        private Task GetLastTask()
+        {
+            return Tasks.Last();
+        }
+
+        private Action<Task> AssociateActionToTask(Action action)
+        {
+            Action<Task> actionTask = task =>
+            {
+                action();
+            };
+            return actionTask;
+        }
+
+        private Action<Task, object> AssociateActionToTask(Action<object> action)
+        {
+            Action<Task, object> actionTask = (task, args) =>
+            {
+                action(args);
+            };
+            return actionTask;
+        }
+
+        private CancellationToken CreateQueueCancelationToken()
+        {
+            if (cancellationTokenSource == null)
+            {
+                cancellationTokenSource = new CancellationTokenSource();
+            }
+            return cancellationTokenSource.Token;
+        }
+
+        private Task StartNew<TAction>(IActionObserver<TAction> observer, params object[] args)
+        {
+            Task task;
+
+            if (args.Length == 0)
+                task = Task.Factory.StartNew(observer.GetAction() as Action, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
+            else
+                task = Task.Factory.StartNew(observer.GetAction() as Action<object>, args, CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
+
+            return task;
+        }
+
+        private Task Start<TAction>(IActionObserver<TAction> observer, params object[] args)
+        {
+            return StartNew(observer, args);
+        }
+
+        private Task ContinueWith<TAction>(IActionObserver<TAction> observer, params object[] args)
+        {
+            Task task;
+
+            if (args.Length == 0)
+                task = GetLastTask().ContinueWith(AssociateActionToTask(observer.GetAction() as Action), CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
+            else
+                task = GetLastTask().ContinueWith(AssociateActionToTask(observer.GetAction() as Action<object>), args, CreateQueueCancelationToken(), TaskContinuationOptions.None, taskScheduler);
+
+            return task;
+        }
+
+        private Task Continue<TAction>(IActionObserver<TAction> observer, params object[] args)
+        {
+            return ContinueWith(observer, args);
+        }
+
         /// <summary>
         /// Disposes and Removes finished and non subscribed Task from the list.
         /// </summary>
@@ -324,6 +279,27 @@ namespace fmacias.Components.FifoTaskQueue
         {
             return (!Provider.ObserverSubscritionExist(task) && TasksProvider.HasTaskBeenFinished(task));
         }
+
+        private async Task<bool> UnsubscribeObservers()
+        {
+            await CompleteQueueObservation();
+            var observersCopy = Provider.Observers.ToList();
+
+            foreach (IObserver<Task> observer in observersCopy)
+            {
+                if (!(observer is null))
+                {
+                    ((IObserver)observer).Unsubscribe();
+                    logger.Debug(String.Format("Observer of Task {0} unsubscribed!", ((IObserver)observer).ObservableTask?.Id));
+                }                    
+            }
+            return true;
+        }
+
+        #endregion
+
+        #region Disposable Pattern
+        
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -331,14 +307,13 @@ namespace fmacias.Components.FifoTaskQueue
 
                 if (Provider.ObserverSubscritionExist())
                 {
-                    Task<bool> completed = Complete();
-                    completed.Wait();
+                    try
+                    {
+                        Task.WaitAll(Tasks.ToArray());
+                    }
+                    catch (Exception e) { }
+                    Complete().Wait();
                     UnsubscribeObservers().Wait();
-                }
-
-                if (Provider.ObserverSubscritionExist())
-                {
-                    throw new FifoTaskQueueException("Any Observer should be present after completation.");
                 }
 
                 ClearUpTasks();
@@ -350,30 +325,18 @@ namespace fmacias.Components.FifoTaskQueue
                 this.cancellationTokenSource?.Dispose();
             }
         }
-        private async Task<bool> UnsubscribeObservers()
-        {
-            List<TaskObserver> completedTaskObservers = new List<TaskObserver>();
-            foreach (IObserver<Task> observer in Provider.Observers)
-            {
-                TaskObserver taskObserver = (TaskObserver)observer;
-                bool observerCompleted = await taskObserver.TaskStatusCompletedTransition;
-                completedTaskObservers.Add(taskObserver);
-            }
-            completedTaskObservers.ForEach(taskObserver =>
-            {
-                taskObserver.Unsubscribe();
-                logger.Debug(String.Format("Observer of Task {0} unsubscribed!", taskObserver.ObservableTask.Id));
-            });
-            return true;
-        }
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
         ~FifoTaskQueue()
         {
             Dispose(false);
         }
+
+        #endregion
     }
 }

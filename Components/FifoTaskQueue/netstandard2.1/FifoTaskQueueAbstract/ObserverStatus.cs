@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace fmacias.Components.FifoTaskQueueAbstract
 {
-    public enum TaskObserverStatus
+    public enum ObserverStatus
     {
         Created = 0,
         Observed = 1,

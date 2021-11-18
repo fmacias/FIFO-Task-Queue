@@ -19,7 +19,7 @@ using NLog;
 using Moq;
 using fmacias.Components.FifoTaskQueue;
 
-namespace fmacias.Tests
+namespace fmacias.Components.FifoTaskQueue.Tests
 {
     [TestFixture()]
     public class TasksProviderTests
@@ -44,7 +44,7 @@ namespace fmacias.Tests
         {
             Task task = Task.Run(() => { });
             TasksProvider provider = TasksProvider.Create(GetLogger());
-            TaskObserver observer = TaskObserver.Create(GetLogger());
+            TaskObserver<Action> observer = TaskObserver<Action>.Create(GetLogger());
             observer.OnNext(task);
             IDisposable unsubscriber = provider.Subscribe(observer);
             Assert.IsTrue(provider.Subscribe(observer) is IDisposable);
