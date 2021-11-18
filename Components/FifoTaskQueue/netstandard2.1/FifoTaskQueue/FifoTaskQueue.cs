@@ -70,18 +70,6 @@ namespace fmacias.Components.FifoTaskQueue
             return this;
         }
 
-        private ITaskQueue ____RunActionAtTask<TAction>(IActionObserver<TAction> observer)
-        {
-            Task queuedTask;
-
-            if (!AreTasksAvailable())
-                queuedTask = Start(observer);
-            else
-                queuedTask = Continue(observer);
-
-            observer.OnNext(queuedTask);
-            return this;
-        }
         private ITaskQueue RunActionAtTask<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args =null)
         {
             Task queuedTask;
@@ -95,10 +83,6 @@ namespace fmacias.Components.FifoTaskQueue
             return this;
         }
 
-        public ITaskQueue RunX<TAction,TParams>(IActionObserver<TAction> observer, params TParams[] args)
-        {
-            return this;
-        }
         /// <summary>
         /// Awaitable method to await processing the queue whenever is required at async methods.
         /// </summary>
