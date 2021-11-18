@@ -4,12 +4,13 @@ FifoTaskQueue is a FIFO task queue for .Net Core 3.1 and .Net Core 5.0 and it is
 
 The primary goal of this component is to run asynchronous processes into the given queue sequentially.
 
-It is intended to be a loosely coupled component to be used within scalable applications. Interfaces and the concrete implementation are located in different Modules, one with the interfaces and the other with the concrete implementation.
+It is intended to be a loosely coupled component to be used within scalable applications. 
+Interfaces and the concrete implementation are located in different Modules, one with the interfaces and the other with the concrete implementation.
 
 It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
 
 Once a Task observation has been finalized, a callback to the Target object its Observer is sent.
-This observer provides its processing state and acesses to its Task as well.
+This observer provides its processing state. Task are being disposed once the observation has been completed and is not available at the Callback of the observer. The Observer manages his own status, so that is not a problem.
 
 The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from which was created.
 
@@ -77,367 +78,334 @@ Test Creation Extracted from Test
 # Usage
 [Checkout some Use Cases at FifoTaskQueueTest](https://github.com/fmacias/ScalableComponents/blob/master/Components/FifoTaskQueue/netstandard2.1/Test/netcore5.0/FifoTaskQueue.Test/FifoTaskQueueTests.cs "FifoTaskQueueTest")
 
-# Example
-## Simple usage a a sync method
+# Extracted from Test
 ```csharp
+ [TestFixture()]
+    public class FifoTaskQueueTests
+    {
+        public class SharedObject{
+            public string propertyOne { get; set; }
+        }
+
+        private FifoTaskQueue CreateTaskQueue()
+        {
+            return FifoTaskQueue.Create(
+                TaskShedulerWraper.Create().FromCurrentWorker(),
+                LogManager.GetCurrentClassLogger());
+        }
+
+        [Test()]
+        public void CreateTest()
+        {
+            Assert.IsInstanceOf<FifoTaskQueueAbstract.ITaskQueue>(CreateTaskQueue());
+        }
+
+        [Test]
+        public void DefineTest()
+        {
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                var observer1 = queue.Define<Action>(() => { });
+                Assert.IsInstanceOf<IActionObserver<Action>>(observer1);
+                Assert.IsInstanceOf<IObserver>(observer1);
+                Assert.IsInstanceOf<ITaskObserver>(observer1);
+            }
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                var observer2 = queue.Define<Action<object>>((args) => { });
+                Assert.IsInstanceOf<IActionObserver<Action<object>>>(observer2);
+                Assert.IsInstanceOf<IObserver>(observer2);
+                Assert.IsInstanceOf<ITaskObserver>(observer2);
+            }
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                var observer2 = queue.Define<Action<int>>((args) => { });
+                Assert.IsInstanceOf<IActionObserver<Action<int>>>(observer2);
+                Assert.IsInstanceOf<IObserver>(observer2);
+                Assert.IsInstanceOf<ITaskObserver>(observer2);
+            }
+        }
+        [Test]
+        public void test()
+        {
+            Action<bool> a = (boolValue) => { };
+            Action<object> b = (booValue) => {
+                a(true);
+            };
+            
+        }
+        [Test]
+        public void RunTest()
+        {
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }));
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }));
+            }
+        }
+
         [Test()]
         public void CompleteAtSyncMethodTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue
-                .Run(
-                    queue.Define(() =>
-                    {
-                        Task.Delay(500).Wait();
-                    }).OnCompleteCallback((object sender) =>
-                    {
-                        var observer = (ITaskObserver<Task>)sender;
-                        Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                    })
-                ).Run(queue.Define(() =>
-                {
+                queue.Run(queue.Define<Action>(() => 
+                { 
                     Task.Delay(500).Wait();
                 }).OnCompleteCallback((object sender) =>
                 {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
-                })
-                ).Run(queue.Define(() =>
-                {
-                    Task.Delay(500).Wait();
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }));
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(500).Wait(); 
                 }).OnCompleteCallback((object sender) =>
                 {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
+                    Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
+                }));
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(500).Wait(); 
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
                 }));
             }
         }
-```
-*Ouput:*
-~~~
-2021-11-16 20:18:06.5870|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 19 Will be observe. State: WaitingToRun
-2021-11-16 20:18:06.5870|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 20 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:06.5870|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 19 initial status Running
-2021-11-16 20:18:06.5870|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 21 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:06.5870|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 20 initial status WaitingForActivation
-2021-11-16 20:18:06.6190|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 21 initial status WaitingForActivation
-2021-11-16 20:18:11.8173|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 19 Status transition to RanToCompletion
-2021-11-16 20:18:11.8173|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 19,  final status RanToCompletion, Duration: 5228
-2021-11-16 20:18:11.8173|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 19 observation completed successfully
-2021-11-16 20:18:11.8173|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 20 Status transition to Running
-2021-11-16 20:18:12.3334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 21 Status transition to Running
-2021-11-16 20:18:12.3334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 20 Status transition to RanToCompletion
-2021-11-16 20:18:12.3334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 20,  final status RanToCompletion, Duration: 5741
-2021-11-16 20:18:12.3334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 20 observation completed successfully
-2021-11-16 20:18:12.8334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 21 Status transition to RanToCompletion
-2021-11-16 20:18:12.8334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 21,  final status RanToCompletion, Duration: 6213
-2021-11-16 20:18:12.8334|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 21 observation completed successfully
-~~~
-## Simple Usage at async method
-```csharp
-         [Test()]
-        public async Task CompleteAtAsyncMethod()
-        {
-            bool firstRun = false;
-            bool secondRun = false;
-            using (FifoTaskQueue queue = CreateTaskQueue())
-            {
-                queue
-                .Run(
-                    queue.Define(() =>
-                    {
-                        firstRun = true;
-                        Assert.IsTrue(firstRun == true && secondRun == false);
-                    }).OnCompleteCallback((object sender) =>
-                    {
-                        var observer = (ITaskObserver<Task>)sender;
-                        Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                    })
-                ).Run(queue.Define(() =>
-                {
-                    secondRun = true;
-                    Assert.IsTrue(firstRun == true && secondRun == true);
-                }).OnCompleteCallback((object sender) =>
-                {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
-                })
-                ).Run(queue.Define(() =>
-                {
-                    Task.Delay(500).Wait();
-                }).OnCompleteCallback((object sender) =>
-                {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
-                }));
-                bool done = await queue.Complete();
-                Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
-            }
-        }
 
-```
-*Ouput:*
-~~~
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1 Will be observe. State: RanToCompletion
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1 initial status RanToCompletion
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 Will be observe. State: WaitingToRun
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 initial status Running
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 Status transition to RanToCompletion
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3 Will be observe. State: WaitingToRun
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3 initial status RanToCompletion
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 1 observation completed successfully
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 2 observation completed successfully
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 3 observation completed successfully
-~~~
-
-## Passing arguments to the actions(Action<object>)
-
-```csharp
         [Test()]
-        public async Task ActionsWithArguments()
+        public async Task VariablesNotPassedAsReferenceToTheActions()
         {
             bool firstRun = false;
             bool secondRun = false;
-            bool thirdRun = false;
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(
-                    queue.Define((testx) =>{
-                        firstRun = true;
-                        Assert.IsTrue(firstRun == true && secondRun == false && thirdRun == false);
-                    }).OnCompleteCallback((object sender) =>{
-                        var observer = (ITaskObserver<Task>)sender;
-                        Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                    }),new object())
-                .Run(queue.Define((testx) =>{
-                    secondRun = true;
-                    Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == false);
-                }).OnCompleteCallback((object sender) =>{
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
-                }), new object())
-                .Run(queue.Define((testx) =>{
-                    thirdRun = true;
-                    Assert.IsTrue(firstRun == true && secondRun == true && thirdRun == true);
-                }).OnCompleteCallback((object sender) =>{
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(observer.Status, TaskObserverStatus.Completed);
-                }), new object());
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
+                {
+                    Assert.IsTrue(args[0] == false && args[1] == false);
+                    args[0] = true;
+                    args[1] = true;
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
+
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
+                {
+                    Assert.IsTrue(args[0] == false && args[1] == false);
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
                 bool done = await queue.Complete();
             }
         }
-```
-*output*
-~~~
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1 Will be observe. State: RanToCompletion
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1 initial status RanToCompletion
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 1,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 Will be observe. State: WaitingToRun
-2021-11-16 20:19:02.0672|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 initial status Running
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2 Status transition to RanToCompletion
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 2,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3 Will be observe. State: WaitingToRun
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3 initial status RanToCompletion
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 3,  final status RanToCompletion, Duration: 0
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 1 observation completed successfully
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 2 observation completed successfully
-2021-11-16 20:19:02.0772|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 3 observation completed successfully
-~~~
-## Passing Variables as Arguments to the actions 
-```csharp
-         [Test()]
-        public async Task ActionsWithVariablesAreUnmutableTest()
+        [Test()]
+        public async Task CompleteObserverBeforeProcessingSecondOne()
         {
-            int countIterations = 0;
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            bool firstRun = false;
+            bool secondRun = false;
+
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define((args) =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    Task.Delay(1000).Wait();
-                    countIterations++;
-                    Assert.AreEqual(1, countIterations);
-                    Assert.AreEqual(0, inputParamteres[0]);
-                }), countIterations);
-
-                queue.Run(queue.Define((args) =>
+                    Assert.IsTrue(args[0] == false && args[1] == false);
+                    args[0] = true;
+                    args[1] = true;
+                }).OnCompleteCallback((object sender) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    countIterations++;
-                    Assert.AreEqual(2, countIterations);
-                    Assert.AreEqual(0, inputParamteres[0]);
-                }), countIterations);
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
+                
+                await queue.Complete();
+                firstRun = true;
 
-                queue.Run(queue.Define((args) =>
+                queue.Run(queue.Define<Action<bool[]>>((args) =>
                 {
-                    object[] inputParamteres = (object[])args;
-                    countIterations++;
-                    Assert.AreEqual(3, countIterations);
-                    Assert.AreEqual(0, inputParamteres[0]);
-                }), countIterations);
-
+                    Assert.IsTrue(args[0] == true && args[1] == false);
+                }).OnCompleteCallback((object sender) =>
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+                }), firstRun, secondRun);
                 bool done = await queue.Complete();
-                Assert.IsTrue(queue.Tasks.Count == 0, "All Tasks where disposed!");
             }
         }
-```
-*Output*
-~~~
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 7 Will be observe. State: WaitingToRun
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 8 Will be observe. State: WaitingForActivation
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 7 initial status Running
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 8 initial status WaitingForActivation
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 9 Will be observe. State: WaitingForActivation
-2021-11-16 20:17:56.6165|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 9 initial status WaitingForActivation
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 9 Status transition to Running
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 9 Status transition to RanToCompletion
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 9,  final status RanToCompletion, Duration: 5288
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 7 Status transition to RanToCompletion
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 7,  final status RanToCompletion, Duration: 5312
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 7 observation completed successfully
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 8 Status transition to RanToCompletion
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 8,  final status RanToCompletion, Duration: 5312
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 8 observation completed successfully
-2021-11-16 20:18:01.9058|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 9 observation completed successfully
-~~~
-## Cancel at first Action
-```csharp
+        
+        /// <summary>
+        /// Tasks were not finshed yet
+        /// </summary>
+        [Test()]
+        public void TasksNotFinishedTest()
+        {
+            using (ITaskQueue queue = CreateTaskQueue())
+            {
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(5000).Wait(); 
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }));
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(2000).Wait(); 
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }));
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                    Task.Delay(2000).Wait(); 
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }));
+
+                Assert.IsTrue(queue.Tasks[0].IsCompleted == false &&
+                queue.Tasks[1].IsCompleted == false &&
+                queue.Tasks[2].IsCompleted == false);
+            }
+        }
+        
         [Test()]
         public async Task CancelFirstActionTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define(() => {
+                queue.Run(queue.Define<Action>(() => 
+                {
                     Task.Delay(5000, queue.CancellationToken).Wait();
-                }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.CompletedWithErrors, observer.Status);
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.CompletedWithErrors, (sender as IObserver).Status);
+
                 }));
-                queue.Run(queue.Define(() => {}).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Canceled, observer.Status);
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+
                 }));
-                queue.Run(queue.Define(() => {}).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Canceled, observer.Status);
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+
                 }));
                 bool done = await queue.CancelAfter(2000);
             }
         }
-```
-~~~
-2021-11-16 20:18:01.9088|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 10 Will be observe. State: WaitingToRun
-2021-11-16 20:18:01.9088|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 10 initial status Running
-2021-11-16 20:18:01.9088|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 11 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:01.9088|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 12 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:01.9088|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 11 initial status WaitingForActivation
-2021-11-16 20:18:02.0048|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 12 initial status WaitingForActivation
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 11,  final status Canceled, Duration: 2131
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 12 Status transition to Canceled
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 12,  final status Canceled, Duration: 2036
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 10 Status transition to Faulted
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 10,  final status Faulted, Duration: 2133
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 10 observation completed successfully
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 11 observation completed successfully
-2021-11-16 20:18:04.0419|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 12 observation completed successfully
-~~~
-## Passing objects as Arguments to the actions
 
-It could be use to access sequentially GUI-Controls, and interact with them.
-
-```csharp
- [Test()]
-        public async Task ActionsWithParamteresObjectsAreMutableTest()
+        [Test()]
+        public async Task AddObjectToTheActions()
         {
-            object[] objectsToShare = new object[3];
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            SharedObject objectsToShare1 = new SharedObject();
+            SharedObject objectsToShare2 = new SharedObject();
+            SharedObject objectsToShare3 = new SharedObject();
+            SharedObject objectsToShare4 = new SharedObject();
+
+
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define((args) => {
-                    ((object[])args)[0] = "a";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at first iteration");
-                }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                }), objectsToShare);
-                queue.Run(queue.Define((args) => {
-                    ((object[])args)[1] = "b";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at second iteration");
-                }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                }), objectsToShare);
-                queue.Run(queue.Define((args) => {
-                    ((object[])args)[2] = "c";
-                    Assert.IsTrue(object.ReferenceEquals(args, objectsToShare),
-                        "object is the same at third iteration");
-                }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
-                }), objectsToShare);
+                queue.Run(queue.Define<Action<SharedObject>>((sharedObject) => 
+                {
+                    sharedObject.propertyOne = "value object 1";
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }), objectsToShare1);
+
+                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
+                {
+                    sharedObjects[1].propertyOne = "value object 2";
+                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
+                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }), objectsToShare1,objectsToShare2);
+
+                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
+                {
+                    sharedObjects[2].propertyOne = "value object 3";
+                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
+                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
+                    Assert.AreEqual("value object 3", sharedObjects[2].propertyOne);
+
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+
+                }), objectsToShare1,objectsToShare2,objectsToShare3);
+
                 bool done = await queue.Complete();
-                Assert.AreEqual("a b c", String.Join(" ", objectsToShare));
+                Assert.AreEqual("value object 1", objectsToShare1.propertyOne);
+                Assert.AreEqual("value object 2", objectsToShare2.propertyOne);
+                Assert.AreEqual("value object 3", objectsToShare3.propertyOne);
             }
         }
-```
-*Output*
-~~~
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 4 Will be observe. State: WaitingToRun
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 5 Will be observe. State: WaitingForActivation
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 4 initial status RanToCompletion
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 4,  final status RanToCompletion, Duration: 0
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 5 initial status RanToCompletion
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 6 Will be observe. State: WaitingToRun
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 5,  final status RanToCompletion, Duration: 0
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 6 initial status RanToCompletion
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 6,  final status RanToCompletion, Duration: 0
-2021-11-16 20:17:56.5905|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 6 observation completed successfully
-~~~
-## Cancel at second Task Test
 
-```csharp
- [Test()]
+        [Test()]
         public async Task CancelSecondTaskTest()
         {
-            using (FifoTaskQueue queue = CreateTaskQueue())
+            using (ITaskQueue queue = CreateTaskQueue())
             {
-                queue.Run(queue.Define(() => {}).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Completed, observer.Status);
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
                 }));
-                queue.Run(queue.Define(() => {
-                    Task.Delay(5000,queue.CancellationToken).Wait();
-                }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.CompletedWithErrors, observer.Status);
+
+                queue.Run(queue.Define<Action>(() => 
+                {
+                    Task.Delay(5000, queue.CancellationToken).Wait();
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.CompletedWithErrors, (sender as IObserver).Status);
                 }));
-                queue.Run(queue.Define(() => { }).OnCompleteCallback((object sender) => {
-                    var observer = (ITaskObserver<Task>)sender;
-                    Assert.AreEqual(TaskObserverStatus.Canceled, observer.Status);
+
+                queue.Run(queue.Define<Action>(() => 
+                { 
+                }).OnCompleteCallback((object sender) => 
+                {
+                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
                 }));
+
                 bool done = await queue.CancelAfter(2000);
             }
         }
+    }
 ```
-*Output*
-~~~
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 13 Will be observe. State: WaitingToRun
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 14 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 13 initial status RanToCompletion
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 13,  final status RanToCompletion, Duration: 0
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 14 initial status Running
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 15 Will be observe. State: WaitingForActivation
-2021-11-16 20:18:04.0469|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 15 initial status WaitingForActivation
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 15 Status transition to Canceled
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 15,  final status Canceled, Duration: 2025
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 14 Status transition to Faulted
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task id: 14,  final status Faulted, Duration: 2025
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 14 observation completed successfully
-2021-11-16 20:18:06.0730|DEBUG|fmacias.Tests.FifoTaskQueueTests|Task 15 observation completed successfully
-~~~
 > I am currently looking for a new Project. Please don't hesitate to contact me at fmaciasruano@gmail.com
