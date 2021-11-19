@@ -75,5 +75,41 @@ namespace fmacias.Components.FifoTaskQueue
             });
             return processingTasks;
         }
+        public async Task<bool> UnsubscribeObservers()
+        {
+            await CompleteQueueObservation();
+            var observersCopy = Observers.ToList();
+
+            foreach (IObserver<Task> observer in observersCopy)
+            {
+                if (!(observer is null))
+                {
+                    ((IObserver)observer).Unsubscribe();
+                }
+            }
+            return true;
+        }
+
+        public async Task<List<bool>> CompleteQueueObservation()
+        {
+            var performedObservableTasks = new List<bool>();
+            var observerCopy = Observers.ToList();
+
+            foreach (IObserver<Task> observer in observerCopy)
+            {
+                ///Check null because observer could be unsubscribed in between by another process.
+                if (!(observer is null))
+                {
+                    bool observed = await observeTransition((ITaskObserver)observer);
+                    performedObservableTasks.Add(observed);
+                }
+            }
+            return performedObservableTasks;
+        }
+        private async Task<bool> observeTransition(ITaskObserver observer)
+        {
+            bool observerCompleted = await observer.TaskStatusCompletedTransition;
+            return observerCompleted;
+        }
     }
 }

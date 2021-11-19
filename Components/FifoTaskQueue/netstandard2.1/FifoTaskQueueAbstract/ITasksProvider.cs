@@ -22,5 +22,7 @@ namespace fmacias.Components.FifoTaskQueueAbstract
         IObserver<Task> GetRequiredObserverByTask(Task task);
         bool ObserverSubscritionExist();
         bool ObserverSubscritionExist(Task task);
+        Task<bool> UnsubscribeObservers();
+        Task<List<bool>> CompleteQueueObservation();
     }
 }

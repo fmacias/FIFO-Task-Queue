@@ -89,7 +89,7 @@ namespace fmacias.Components.FifoTaskQueue
         /// <returns></returns>
         public async Task<bool> Complete()
         {
-            List<bool> observers = await CompleteQueueObservation();
+            List<bool> observers = await Provider.CompleteQueueObservation();
             return !HaveObserversBeenPerformed(observers);
         }
 
@@ -130,7 +130,7 @@ namespace fmacias.Components.FifoTaskQueue
         /// CancelationToken<see cref="CancellationToken"/> used to manage a cascade cancelation of running or planned tasks.
         /// Tests provided at its UnitTest Class.
         /// </summary>
-        public CancellationToken CancellationToken => CreateQueueCancelationToken();
+        public CancellationToken CancellationToken => GetQueueCancelationToken();
 
         /// <summary>
         /// Task to run provided by <see cref="provider"/>
@@ -149,30 +149,6 @@ namespace fmacias.Components.FifoTaskQueue
             var observableTask = TaskObserver<TAction>.Create(logger);
             observableTask.Subscribe(Provider);
             return observableTask;
-        }
-
-        private async Task<List<bool>> CompleteQueueObservation()
-        {
-            var performedObservableTasks = new List<bool>();
-            var oberversCopyToAvoidErrorOnCallbackOperations = Provider.Observers.ToList();
-
-            foreach (IObserver<Task> observer in oberversCopyToAvoidErrorOnCallbackOperations)
-            {
-                ///Check null because observer could be unsubscribed in between by another process.
-                if (!(observer is null))
-                {
-                    bool observed = await observeTransition((ITaskObserver)observer);
-                    performedObservableTasks.Add(observed);
-                }
-            }
-            return performedObservableTasks;
-        }
-
-        private async Task<bool> observeTransition(ITaskObserver observer)
-        {
-            bool observerCompleted = await observer.TaskStatusCompletedTransition;
-            logger.Debug(String.Format("Task {0} observation completed {1}", observer.ObservableTask?.Id, observerCompleted ? "successfully" : "unsuccessfully"));
-            return observerCompleted;
         }
 
         private TasksProvider Provider
@@ -223,7 +199,7 @@ namespace fmacias.Components.FifoTaskQueue
             return ao;
         }
 
-        private CancellationToken CreateQueueCancelationToken()
+        private CancellationToken GetQueueCancelationToken()
         {
             if (cancellationTokenSource == null)
             {
@@ -236,7 +212,7 @@ namespace fmacias.Components.FifoTaskQueue
         {
             return Task.Factory.StartNew(
                 observer.GetAction() as Action,
-                CreateQueueCancelationToken(),
+                GetQueueCancelationToken(),
                 TaskCreationOptions.None,
                 taskScheduler);
         }
@@ -246,13 +222,13 @@ namespace fmacias.Components.FifoTaskQueue
             return Task.Factory.StartNew(
                 ActionParams<TAction, TArgs>(),
                 ExecutorWithParams<TAction, TArgs>.Create(observer, args),
-                CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
+                GetQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
         }
         private Task Continue<TAction>(IActionObserver<TAction> observer)
         {
             return GetLastTask().ContinueWith(
                 ActionTaskNoParams(observer),
-                CreateQueueCancelationToken(),
+                GetQueueCancelationToken(),
                 TaskContinuationOptions.None,
                 taskScheduler);
         }
@@ -262,28 +238,11 @@ namespace fmacias.Components.FifoTaskQueue
             return GetLastTask().ContinueWith(
                 ActionTaskParams<TAction, TArgs>(),
                 ExecutorWithParams<TAction, TArgs>.Create(observer, args),
-                CreateQueueCancelationToken(),
+                GetQueueCancelationToken(),
                 TaskContinuationOptions.None,
                 taskScheduler);
         }
         
-        /// <summary>
-        /// Disposes and Removes finished and non subscribed Task from the list.
-        /// </summary>
-        private void ClearUpTasks()
-        {
-            List<int> disposedTaskIds = new List<int>();
-            foreach (Task task in Tasks)
-            {
-                if (IsTaskDisposable(task))
-                {
-                    disposedTaskIds.Add(task.Id);
-                    task.Dispose();
-                }
-            }
-            RemoveTasks(disposedTaskIds);
-        }
-
         private void RemoveTasks(List<int> disposedTaskIds)
         {
             Tasks.RemoveAll(currentTask => Array.IndexOf(disposedTaskIds.ToArray(), currentTask.Id) > -1);
@@ -293,27 +252,6 @@ namespace fmacias.Components.FifoTaskQueue
         {
             return (!Provider.ObserverSubscritionExist(task) && TasksProvider.HasTaskBeenFinished(task));
         }
-
-        private async Task<bool> UnsubscribeObservers()
-        {
-            await CompleteQueueObservation();
-            var observersCopy = Provider.Observers.ToList();
-
-            foreach (IObserver<Task> observer in observersCopy)
-            {
-                if (!(observer is null))
-                {
-                    ((IObserver)observer).Unsubscribe();
-
-                    if (((IObserver)observer).ObservableTask is null)
-                        logger.Debug("Observer of non started Task unsubscribed!");
-                    else
-                        logger.Debug(String.Format("Observer of Task {0} unsubscribed!", ((IObserver)observer).ObservableTask.Id));
-                }                    
-            }
-            return true;
-        }
-
         #endregion
 
         #region Disposable Pattern
@@ -325,10 +263,8 @@ namespace fmacias.Components.FifoTaskQueue
 
                 if (Provider.ObserverSubscritionExist())
                 {
-                    UnsubscribeObservers().Wait();
+                    Provider.UnsubscribeObservers().Wait();
                 }
-
-                ClearUpTasks();
 
                 if (Tasks.Count() > 0)
                 {
@@ -343,7 +279,9 @@ namespace fmacias.Components.FifoTaskQueue
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
+        /// <summary>
+        /// Managed by the Garbage Collector
+        /// </summary>
         ~FifoTaskQueue()
         {
             Dispose(false);

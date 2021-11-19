@@ -66,6 +66,7 @@ namespace fmacias.Components.FifoTaskQueue
         /// </summary>
         public void OnCompleted()
         {
+            logger.Debug(String.Format("Task {0} observation completed ", ObservableTask.Id));
             this.ObservableTask.Wait();
             this.ObservableTask.Dispose();
             OnCompleteCallback();
@@ -111,6 +112,11 @@ namespace fmacias.Components.FifoTaskQueue
             ErrorEvent -= HandleError;
             CompletedCallbackEvent -= HandelnCompletedCallback;
             ErrorCallBackEvent -= HandelnErrorCallback;
+
+            if (ObservableTask is null)
+                logger.Debug("Observer of non started Task unsubscribed!");
+            else
+                logger.Debug(String.Format("Observer of Task {0} unsubscribed!", ObservableTask.Id));
         }
 
         /// <summary>
