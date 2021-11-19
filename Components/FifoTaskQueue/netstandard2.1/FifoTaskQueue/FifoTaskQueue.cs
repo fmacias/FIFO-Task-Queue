@@ -232,58 +232,41 @@ namespace fmacias.Components.FifoTaskQueue
             return cancellationTokenSource.Token;
         }
 
-        
+        private Task Start<TAction>(IActionObserver<TAction> observer)
+        {
+            return Task.Factory.StartNew(
+                observer.GetAction() as Action,
+                CreateQueueCancelationToken(),
+                TaskCreationOptions.None,
+                taskScheduler);
+        }
 
         private Task Start<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
         {
-            return StartNew<TAction,TArgs>(observer, args);
-        }
-        private Task Start<TAction>(IActionObserver<TAction> observer)
-        {
-            return StartNew(observer);
-        }
-        private Task StartNew<TAction>(IActionObserver<TAction> observer)
-        {
-            return Task.Factory.StartNew(
-                observer.GetAction() as Action, 
-                CreateQueueCancelationToken(), 
-                TaskCreationOptions.None, 
-                taskScheduler);
-        }
-        private Task StartNew<TAction, TArgs>(IActionObserver<TAction> observer, TArgs[] args)
-        {
             return Task.Factory.StartNew(
                 ActionParams<TAction, TArgs>(),
-                ExecutorWithParams<TAction,TArgs>.Create(observer,args),
+                ExecutorWithParams<TAction, TArgs>.Create(observer, args),
                 CreateQueueCancelationToken(), TaskCreationOptions.None, taskScheduler);
         }
-        private Task ContinueWith<TAction>(IActionObserver<TAction> observer)
+        private Task Continue<TAction>(IActionObserver<TAction> observer)
         {
             return GetLastTask().ContinueWith(
-                ActionTaskNoParams(observer), 
-                CreateQueueCancelationToken(), 
-                TaskContinuationOptions.None, 
-                taskScheduler);
-        }
-        private Task ContinueWith<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
-        {
-            return GetLastTask().ContinueWith(
-                ActionTaskParams<TAction,TArgs>(),
-                ExecutorWithParams<TAction, TArgs>.Create(observer, args), 
-                CreateQueueCancelationToken(), 
-                TaskContinuationOptions.None, 
+                ActionTaskNoParams(observer),
+                CreateQueueCancelationToken(),
+                TaskContinuationOptions.None,
                 taskScheduler);
         }
 
         private Task Continue<TAction,TArgs>(IActionObserver<TAction> observer, TArgs[] args)
         {
-            return ContinueWith<TAction, TArgs>(observer, args);
+            return GetLastTask().ContinueWith(
+                ActionTaskParams<TAction, TArgs>(),
+                ExecutorWithParams<TAction, TArgs>.Create(observer, args),
+                CreateQueueCancelationToken(),
+                TaskContinuationOptions.None,
+                taskScheduler);
         }
-        private Task Continue<TAction>(IActionObserver<TAction> observer)
-        {
-            return ContinueWith(observer);
-        }
-
+        
         /// <summary>
         /// Disposes and Removes finished and non subscribed Task from the list.
         /// </summary>
