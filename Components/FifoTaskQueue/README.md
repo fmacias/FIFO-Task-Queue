@@ -9,7 +9,7 @@ Interfaces and the concrete implementation are located in different Modules, one
 
 It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
 
-Once a Task observation has been finalized, a callback to the Target object its Observer is sent.
+Once a Task observation has been finalized, a callback to the Target object is sent.
 This observer provides its processing state. Task are being disposed once the observation has been completed and is not available at the Callback of the observer. The Observer manages his own status, so that is not a problem.
 
 The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from which was created.
