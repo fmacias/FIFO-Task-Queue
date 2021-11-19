@@ -66,6 +66,7 @@ namespace fmacias.Components.FifoTaskQueue
         /// </summary>
         public void OnCompleted()
         {
+            this.ObservableTask.Wait();
             this.ObservableTask.Dispose();
             OnCompleteCallback();
             Unsubscribe();

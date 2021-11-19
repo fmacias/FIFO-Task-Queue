@@ -188,7 +188,7 @@ namespace fmacias.Components.FifoTaskQueue
 
         private bool AreTasksAvailable()
         {
-            return Tasks.Count > 0;
+            return Tasks.Count > 0 || Tasks is null;
         }
 
         private Task GetLastTask()
@@ -321,7 +321,11 @@ namespace fmacias.Components.FifoTaskQueue
                 if (!(observer is null))
                 {
                     ((IObserver)observer).Unsubscribe();
-                    logger.Debug(String.Format("Observer of Task {0} unsubscribed!", ((IObserver)observer).ObservableTask?.Id));
+
+                    if (((IObserver)observer).ObservableTask is null)
+                        logger.Debug("Observer of non started Task unsubscribed!");
+                    else
+                        logger.Debug(String.Format("Observer of Task {0} unsubscribed!", ((IObserver)observer).ObservableTask.Id));
                 }                    
             }
             return true;
@@ -338,12 +342,6 @@ namespace fmacias.Components.FifoTaskQueue
 
                 if (Provider.ObserverSubscritionExist())
                 {
-                    try
-                    {
-                        Task.WaitAll(Tasks.ToArray());
-                    }
-                    catch (Exception e) { }
-                    Complete().Wait();
                     UnsubscribeObservers().Wait();
                 }
 
