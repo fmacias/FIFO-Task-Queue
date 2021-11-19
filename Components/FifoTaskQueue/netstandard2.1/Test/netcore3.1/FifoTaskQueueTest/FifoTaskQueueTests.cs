@@ -69,15 +69,7 @@ namespace fmacias.Components.FifoTaskQueue.Tests
                 Assert.IsInstanceOf<ITaskObserver>(observer2);
             }
         }
-        [Test]
-        public void test()
-        {
-            Action<bool> a = (boolValue) => { };
-            Action<object> b = (booValue) => {
-                a(true);
-            };
-            
-        }
+
         [Test]
         public void RunTest()
         {

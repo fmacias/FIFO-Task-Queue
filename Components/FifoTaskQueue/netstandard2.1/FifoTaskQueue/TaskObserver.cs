@@ -170,7 +170,8 @@ namespace fmacias.Components.FifoTaskQueue
                     System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
                     TaskStatus currentStatus = runningTask.Status;
                     logger.Debug(string.Format("Task id: {0} initial status {1}", runningTask.Id, runningTask.Status));
-                    while (!(runningTask.IsCompleted || runningTask.IsCanceled || runningTask.IsFaulted) && (watch.ElapsedMilliseconds <= MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS))
+
+                    while (!(IsTaskBeingProcessed()) && (!MaximalElapsedTimeExceded(watch)))
                     {
                         if (currentStatus != runningTask.Status)
                         {
@@ -190,6 +191,16 @@ namespace fmacias.Components.FifoTaskQueue
                 }
                 return processed;
             });
+
+            bool IsTaskBeingProcessed()
+            {
+                return runningTask.IsCompleted || runningTask.IsCanceled || runningTask.IsFaulted;
+            }
+
+            static bool MaximalElapsedTimeExceded(System.Diagnostics.Stopwatch watch)
+            {
+                return watch.ElapsedMilliseconds > MAXIMAL_TASK_WATCHER_ELAPSED_TIME_MS;
+            }
         }
 
         protected virtual void OnPollingTaskStatusTransitionFinishied(long executionTime)

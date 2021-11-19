@@ -62,8 +62,8 @@ namespace fmacias.Components.FifoTaskQueue
         public List<Task> GetProcessingTasks()
         {
             List<Task> processingTasks = new List<Task>();
-            var oberversCopyToAvoidErrorOnCallbackOperations = observers.ToList();
-            oberversCopyToAvoidErrorOnCallbackOperations.ForEach((observer) =>
+            var observersCopy = observers.ToList();
+            observersCopy.ForEach((observer) =>
             {
                 if (!(observer is null))
                 {
