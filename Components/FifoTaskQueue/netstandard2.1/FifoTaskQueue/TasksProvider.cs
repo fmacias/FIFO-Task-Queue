@@ -36,24 +36,13 @@ namespace fmacias.Components.FifoTaskQueue
                 observers.Add(observer);
             return ObserverUnsubscriber<Task>.Create(observers, observer);
         }
-        public IObserver<Task> GetRequiredObserverByTask(Task task)
-        {
-            return observers.First(
-                observer => Object.ReferenceEquals(((IObserver)observer).ObservableTask, task));
-        }
-        public bool ObserverSubscritionExist(Task task)
-        {
-            return observers.Exists(observer => ReferenceEquals(((IObserver)observer).ObservableTask, task));
-        }
-        public bool ObserverSubscritionExist()
+        private bool ObserverSubscritionExist()
         {
             return observers.Count > 0;
         }
-        public static bool HasTaskBeenFinished(Task task)
-        {
-            return (task.IsCompleted || task.IsCanceled || task.IsFaulted);
-        }
-        public List<IObserver<Task>> Observers => observers;
+
+        private List<IObserver<Task>> Observers => observers;
+
         private bool HasObserverBeenRegistered(IObserver<Task> observer)
         {
             return observers.Contains(observer);
@@ -77,14 +66,17 @@ namespace fmacias.Components.FifoTaskQueue
         }
         public async Task<bool> UnsubscribeObservers()
         {
-            await CompleteQueueObservation();
-            var observersCopy = Observers.ToList();
-
-            foreach (IObserver<Task> observer in observersCopy)
+            if (ObserverSubscritionExist())
             {
-                if (!(observer is null))
+                await CompleteQueueObservation();
+                var observersCopy = Observers.ToList();
+
+                foreach (IObserver<Task> observer in observersCopy)
                 {
-                    ((IObserver)observer).Unsubscribe();
+                    if (!(observer is null))
+                    {
+                        ((IObserver)observer).Unsubscribe();
+                    }
                 }
             }
             return true;

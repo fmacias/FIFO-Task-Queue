@@ -28,7 +28,7 @@ namespace fmacias.Components.FifoTaskQueue
         private readonly TaskScheduler taskScheduler;
         private readonly ILogger logger;
         private CancellationTokenSource cancellationTokenSource;
-        private TasksProvider tasksProvider;
+        private ITasksProvider tasksProvider;
 
         #region Constructor
 
@@ -151,7 +151,7 @@ namespace fmacias.Components.FifoTaskQueue
             return observableTask;
         }
 
-        private TasksProvider Provider
+        private ITasksProvider Provider
         {
             get
             {
@@ -242,29 +242,16 @@ namespace fmacias.Components.FifoTaskQueue
                 TaskContinuationOptions.None,
                 taskScheduler);
         }
-        
-        private void RemoveTasks(List<int> disposedTaskIds)
-        {
-            Tasks.RemoveAll(currentTask => Array.IndexOf(disposedTaskIds.ToArray(), currentTask.Id) > -1);
-        }
-
-        private bool IsTaskDisposable(Task task)
-        {
-            return (!Provider.ObserverSubscritionExist(task) && TasksProvider.HasTaskBeenFinished(task));
-        }
         #endregion
 
         #region Disposable Pattern
         
         protected virtual void Dispose(bool disposing)
         {
+
             if (disposing)
             {
-
-                if (Provider.ObserverSubscritionExist())
-                {
-                    Provider.UnsubscribeObservers().Wait();
-                }
+                Provider.UnsubscribeObservers().Wait();
 
                 if (Tasks.Count() > 0)
                 {
