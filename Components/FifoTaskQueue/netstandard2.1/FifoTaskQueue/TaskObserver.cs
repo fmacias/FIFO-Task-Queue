@@ -62,12 +62,30 @@ namespace fmacias.Components.FifoTaskQueue
 
 
         /// <summary>
+        /// Cleapup resourced managed by the Observer and trigger a callback to the 
+        /// corresponging Event-Subscriber.
+        /// 
+        /// Notes:
+        /// . Task cleaned up before callback.
+        /// . Obeserver unsubscription after callback completion.
+        /// . This method is triggered after Task Completion. 
+        /// As the Observed Task is being managed by the Provider and consumed by the Queue, 
+        /// which ensures that the subscriptions are being properly cleaned up on 
+        /// Disposing to avoid memory leak problems, and given that the Queue(Consumer) is 
+        /// able trigger a cascade cancellation, is necessary to catch, ignoring the 
+        /// Exceptions(TaskCancelledException inside of a AggregationException ), 
+        /// on Waiting for Task finalization(from the point view of the Observer is 
+        /// already finalized).
         /// Interface <see cref="ITaskObserver"/> implements <see cref="IObserver<Task>"/>
         /// </summary>
         public void OnCompleted()
         {
             logger.Debug(String.Format("Task {0} observation completed ", ObservableTask.Id));
-            this.ObservableTask.Wait();
+            try
+            {
+                this.ObservableTask.Wait();
+            }
+            catch{ }
             this.ObservableTask.Dispose();
             OnCompleteCallback();
             Unsubscribe();
