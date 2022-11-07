@@ -8,8 +8,11 @@ using System.Threading.Tasks;
 using Unity;
 using fmacias.Components.EventAggregator;
 using fmacias.Components.FifoTaskQueueAbstract;
-using fmacias.Components.FifoTaskQueue;
 using System.Threading;
+using FifoTaskQueue;
+using FifoTaskQueue.Fmaciasruano.Components;
+using FifoTaskQueueAbstract;
+using FifoTaskQueueAbstract.Fmaciasruano.Components;
 using fmacias.Components.MVPVMModule;
 
 namespace WpfMvpVmModuleSkeleton.Tests
@@ -35,7 +38,7 @@ namespace WpfMvpVmModuleSkeleton.Tests
                 register = new SkeletonModuleRegister(container);
                 register.Register<SkeletonView>();
                 Assert.IsInstanceOf<ProcessEventFactory>(container.Resolve<IProcessEventFactory>(GetRegistrationName(typeof(ProcessEventFactory))));
-                Assert.IsInstanceOf<EventAggregator>(container.Resolve<IEventSubscriptable>(GetRegistrationName(typeof(EventAggregator))));
+                Assert.IsInstanceOf<EventAggregator>(container.Resolve<IEventAggregator>(GetRegistrationName(typeof(EventAggregator))));
                 var processEventSubscriptorFactory = container.Resolve<IProcessEventSubscriptorFactory>(GetRegistrationName(typeof(ProcessEventSubscriptorFactory)));
                 Assert.IsInstanceOf<ProcessEventSubscriptorFactory>(processEventSubscriptorFactory);
                 var uiEventSubscriptorFatory = container.Resolve<IUIEventSubscriptorFactory>(GetRegistrationName(typeof(UIEventSubscriptorFactory)));

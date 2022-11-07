@@ -16,6 +16,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FifoTaskQueue;
+using FifoTaskQueue.Fmaciasruano.Components;
 using fmacias.Components.FifoTaskQueue;
 
 namespace fmacias.Components.FifoTaskQueue.Tests
@@ -29,8 +31,8 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         [Test()]
         public void FromCurrentWorkerTest()
         {
-            TaskShedulerWraper synchronizationContextTaskShedulerWraper = TaskShedulerWraper.Create();
-            TaskScheduler taskSheduler = synchronizationContextTaskShedulerWraper.FromCurrentWorker();
+            Sheduler synchronizationContextSheduler = Sheduler.Create();
+            TaskScheduler taskSheduler = synchronizationContextSheduler.FromCurrentWorker();
             Assert.IsNotNull(taskSheduler);
         }
         /// <summary>
@@ -39,11 +41,11 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         [Test()]
         public void FromCurrentWorker_instancesAreTheSameTest()
         {
-            TaskShedulerWraper synchronizationContextTaskShedulerWraper = TaskShedulerWraper.Create();
-            TaskScheduler taskSheduler1 = synchronizationContextTaskShedulerWraper.FromCurrentWorker();
-            TaskScheduler taskSheduler2 = synchronizationContextTaskShedulerWraper.FromCurrentWorker();
+            Sheduler synchronizationContextSheduler = Sheduler.Create();
+            TaskScheduler taskSheduler1 = synchronizationContextSheduler.FromCurrentWorker();
+            TaskScheduler taskSheduler2 = synchronizationContextSheduler.FromCurrentWorker();
             Assert.IsTrue(Object.ReferenceEquals(taskSheduler1, taskSheduler2));
-            Assert.IsTrue(Object.ReferenceEquals(synchronizationContextTaskShedulerWraper.Sheduler, taskSheduler1));
+            Assert.IsTrue(Object.ReferenceEquals(synchronizationContextSheduler.Sheduler, taskSheduler1));
         }
 
         /// <summary>
@@ -55,8 +57,8 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         [Test()]
         public void FromGUIWorker_instancesAreTheSameTest()
         {
-            TaskShedulerWraper synchronizationContextTaskShedulerWraper = TaskShedulerWraper.Create();
-            Assert.Throws(typeof(System.InvalidOperationException), delegate { synchronizationContextTaskShedulerWraper.FromGUIWorker(); });
+            Sheduler synchronizationContextSheduler = Sheduler.Create();
+            Assert.Throws(typeof(System.InvalidOperationException), delegate { synchronizationContextSheduler.FromGUIWorker(); });
         }
 
         /// <summary>
@@ -68,8 +70,8 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         {
             SynchronizationContext synchronizationContext = new SynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-            TaskShedulerWraper synchronizationContextTaskShedulerWraper = TaskShedulerWraper.Create();
-            Assert.IsInstanceOf(typeof(TaskScheduler), synchronizationContextTaskShedulerWraper.FromGUIWorker());
+            Sheduler synchronizationContextSheduler = Sheduler.Create();
+            Assert.IsInstanceOf(typeof(TaskScheduler), synchronizationContextSheduler.FromGUIWorker());
         }
     }
 }

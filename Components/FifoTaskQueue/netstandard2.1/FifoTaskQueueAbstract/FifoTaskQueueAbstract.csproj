@@ -4,4 +4,8 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\EventAggregator\netstandard2.1\EventAggregatorAbstract\EventAggregatorAbstract.csproj" />
+  </ItemGroup>
+
 </Project>

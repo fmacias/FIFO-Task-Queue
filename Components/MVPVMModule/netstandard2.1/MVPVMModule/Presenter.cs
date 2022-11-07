@@ -6,10 +6,10 @@ namespace fmacias.Components.MVPVMModule
     {
         protected readonly IBLL bll;
         protected readonly IViewModel viewModel;
-        protected readonly IEventSubscriptable eventAggregator;
+        protected readonly IEventAggregator eventAggregator;
         protected TViewType view;
 
-        protected Presenter(IBLL bll, IViewModel viewModel, IEventSubscriptable eventAggregator)
+        protected Presenter(IBLL bll, IViewModel viewModel, IEventAggregator eventAggregator)
         {
             this.bll = bll;
             this.viewModel = viewModel;
@@ -19,7 +19,7 @@ namespace fmacias.Components.MVPVMModule
 
         public IViewModel ViewModel => viewModel;
 
-        public IEventSubscriptable EventAggregator => eventAggregator;
+        public IEventAggregator EventAggregator => eventAggregator;
 
         public virtual IPresenter<TViewType> SetView(TViewType view)
         {

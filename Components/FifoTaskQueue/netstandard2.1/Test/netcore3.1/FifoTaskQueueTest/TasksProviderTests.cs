@@ -15,6 +15,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FifoTaskQueue;
+using FifoTaskQueue.Fmaciasruano.Components;
 using NLog;
 using Moq;
 using fmacias.Components.FifoTaskQueue;
@@ -44,7 +46,7 @@ namespace fmacias.Components.FifoTaskQueue.Tests
         {
             Task task = Task.Run(() => { });
             TasksProvider provider = TasksProvider.Create(GetLogger());
-            TaskObserver<Action> observer = TaskObserver<Action>.Create(GetLogger());
+            ____TaskObserver<Action> observer = ____TaskObserver<Action>.Create(GetLogger());
             observer.OnNext(task);
             IDisposable unsubscriber = provider.Subscribe(observer);
             Assert.IsTrue(provider.Subscribe(observer) is IDisposable);

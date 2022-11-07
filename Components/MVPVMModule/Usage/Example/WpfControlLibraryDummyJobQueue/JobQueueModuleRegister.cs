@@ -1,5 +1,4 @@
 ﻿using fmacias.Components.EventAggregator;
-using fmacias.Components.FifoTaskQueue;
 using fmacias.Components.FifoTaskQueueAbstract;
 using fmacias.Components.MVPVMModule;
 using fmacias.Components.MVPVMModule.Abstract;
@@ -11,6 +10,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using FifoTaskQueue;
+using FifoTaskQueue.Fmaciasruano.Components;
+using FifoTaskQueueAbstract;
+using FifoTaskQueueAbstract.Fmaciasruano.Components;
 using Unity;
 using Unity.Injection;
 
@@ -68,7 +71,7 @@ namespace WpfControlLibraryDummyJobQueue
                 GetUnicRegistrationName(typeof(UIEventSubscriptorFactory))
             );
 
-            iocContainer.RegisterType<IEventSubscriptable, EventAggregator>(
+            iocContainer.RegisterType<IEventAggregator, EventAggregator>(
                 GetUnicRegistrationName(typeof(EventAggregator)),
                 new InjectionConstructor(
                     ResolveConstructorObject<IProcessEventFactory, ProcessEventFactory>(),
@@ -96,7 +99,7 @@ namespace WpfControlLibraryDummyJobQueue
                 new InjectionConstructor(
                     ResolveConstructorObject<IBLL, JobQueueBLL>(),
                     ResolveConstructorObject<IViewModel, JobQueueViewModel>(),
-                    ResolveConstructorObject<IEventSubscriptable, EventAggregator>(),
+                    ResolveConstructorObject<IEventAggregator, EventAggregator>(),
                     ResolveConstructorObject<IGuiContextFifoTaskQueue, GuiContextFifoTaskQueue>()
                 )
             );

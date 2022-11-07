@@ -1,12 +1,8 @@
-﻿using NUnit.Framework;
-using MVPVMAbstract;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using MVPVMAbstractTests;
-using fmacias.Components.EventAggregator;
+﻿using EventAggregatorAbstract.Fmaciasruano.Components;
+using NUnit.Framework;
+using EventAggregatorComponents = EventAggregator.Fmaciasruano.Components;
 
-namespace MVPVMAbstract.Tests
+namespace EventAggregator.Test
 {
     [TestFixture()]
     public class ProcessEventSubscriptionTests
@@ -18,9 +14,13 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void ProcessEventSubscriptionTest()
         {
-            IEventSubscriptable eventAggregator = new EventAggregator(new ProcessEventFactory(), new ProcessEventSubscriptorFactory(), new UIEventSubscriptorFactory());
-            IProcessEvent trieggerObject = eventAggregator.ProcessEventFactory.Create<TestProcessEvent>();
-            IProcessEventSubscriptor subscriptor = new ProcessEventSubscriptor(eventAggregator);
+            IEventAggregator eventAggregator = EventAggregatorComponents.EventAggregator.Create(
+                EventAggregatorComponents.ProcessEventFactory.Instance,
+                EventAggregatorComponents.ProcessEventSubscriptorFactory.Instance, 
+                EventAggregatorComponents.UIEventSubscriptorFactory.Instance);
+
+            IProcessEvent trieggerObject = eventAggregator.EventFactory.Create<TestProcessEvent>();
+            IProcessEventSubscriptor subscriptor = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
             subscriptor.AddEventHandler<IProcessEvent.ProcessEventHandler>(test_handler, trieggerObject);
             trieggerObject.Publish();
             Assert.IsTrue(eventAggregator.Subscriptions.Count == 1);

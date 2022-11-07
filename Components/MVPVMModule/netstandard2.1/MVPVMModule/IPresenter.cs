@@ -9,7 +9,7 @@ namespace fmacias.Components.MVPVMModule
     {
         IBLL BLL { get; }
         IViewModel ViewModel { get; }
-        IEventSubscriptable EventAggregator { get; }
+        IEventAggregator EventAggregator { get; }
         IPresenter<TViewType> SetView(TViewType view);
         void UnsubscribeAll();
     }

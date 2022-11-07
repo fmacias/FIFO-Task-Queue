@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using FifoTaskQueueAbstract;
+using FifoTaskQueueAbstract.Fmaciasruano.Components;
 using Unity;
 using WpfControlProgressBar;
 
@@ -21,7 +23,7 @@ namespace WpfControlLibraryDummyJobQueue
         private readonly JobQueueViewModel jobQueueViewModel;
         private DummyFifoJobQueue jobqueueView;
 
-        public JobQueuePresenter(IBLL bll, IViewModel viewModel, IEventSubscriptable eventAggregator,
+        public JobQueuePresenter(IBLL bll, IViewModel viewModel, IEventAggregator eventAggregator,
             IGuiContextFifoTaskQueue guiContextFifoTaskQueue) : base(bll, viewModel, eventAggregator)
         {
             this.guiContextFifoTaskQueue = guiContextFifoTaskQueue;
@@ -86,7 +88,7 @@ namespace WpfControlLibraryDummyJobQueue
             Task.Factory.StartNew((progressBar) =>
             {
                 //todo
-            }, progressBar, guiContextFifoTaskQueue.CancellationToken, TaskCreationOptions.None, guiContextFifoTaskQueue.TaskSheduler);
+            }, progressBar, guiContextFifoTaskQueue.CancellationToken, TaskCreationOptions.None, guiContextFifoTaskQueue.TaskScheduler);
         }
 
         private static ProgressBar ExtractProcessBar(UIElementCollection progressBarCollection, int i)
@@ -140,7 +142,6 @@ namespace WpfControlLibraryDummyJobQueue
 
         public override void UnsubscribeAll()
         {
-            guiContextFifoTaskQueue.Dispose();
             base.UnsubscribeAll();
         }
     }

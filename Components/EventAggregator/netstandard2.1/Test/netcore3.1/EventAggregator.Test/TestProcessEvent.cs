@@ -1,10 +1,6 @@
-﻿using fmacias.Components.EventAggregator;
-using MVPVMAbstract;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using EventAggregator.Fmaciasruano.Components;
 
-namespace MVPVMAbstractTests
+namespace EventAggregator.Test
 {
     public class TestProcessEvent : ProcessEvent { }
 }

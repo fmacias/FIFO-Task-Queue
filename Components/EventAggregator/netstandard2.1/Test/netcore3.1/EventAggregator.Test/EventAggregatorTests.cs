@@ -1,13 +1,8 @@
-﻿using NUnit.Framework;
-using MVPVMAbstract;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using MVPVMAbstractTests;
-using System.Reflection;
-using fmacias.Components.EventAggregator;
+﻿using EventAggregatorAbstract.Fmaciasruano.Components;
+using NUnit.Framework;
+using EventAggregatorComponents=EventAggregator.Fmaciasruano.Components;
 
-namespace MVPVMAbstract.Tests
+namespace EventAggregator.Test
 {
     [TestFixture()]
     public class EventAggregatorTests
@@ -15,7 +10,7 @@ namespace MVPVMAbstract.Tests
         private bool processEventDone = false;
         private bool buttonSubscriptionOneDone = false;
         private bool buttonSubscriptionTwoDone = false;
-        private IEventSubscriptable eventAggregator;
+        private IEventAggregator eventAggregator;
         private void process_event_handler(object sender)
         {
             processEventDone = true;
@@ -32,9 +27,12 @@ namespace MVPVMAbstract.Tests
             Assert.IsInstanceOf<Button>(sender);
         }
         [SetUp]
-        public void ResetEventsOutput()
+        public void Reset()
         {
-            eventAggregator = new EventAggregator(new ProcessEventFactory(), new ProcessEventSubscriptorFactory(), new UIEventSubscriptorFactory());
+            eventAggregator = EventAggregatorComponents.EventAggregator.Create(
+                EventAggregatorComponents.ProcessEventFactory.Instance,
+                EventAggregatorComponents.ProcessEventSubscriptorFactory.Instance, 
+                EventAggregatorComponents.UIEventSubscriptorFactory.Instance);
             processEventDone = false;
             buttonSubscriptionOneDone = false;
             buttonSubscriptionTwoDone = false;
@@ -43,8 +41,8 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void SubscribeTest()
         {
-            IProcessEvent processEventObject = eventAggregator.ProcessEventFactory.Create<TestProcessEvent>();
-            IProcessEventSubscriptor processSubscriptor = new ProcessEventSubscriptor(eventAggregator);
+            IProcessEvent processEventObject = eventAggregator.EventFactory.Create<TestProcessEvent>();
+            IProcessEventSubscriptor processSubscriptor = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
             using (IEventUnsubscriber unsubscriber = eventAggregator.Subscribe(processSubscriptor))
             {
                 processSubscriptor.AddEventHandler<IProcessEvent.ProcessEventHandler>(process_event_handler, processEventObject);
@@ -54,7 +52,7 @@ namespace MVPVMAbstract.Tests
             }
 
             Button btn = new Button();
-            IUIEventSubscriptor uiSubscriptor = new UIEventSubscriptor(eventAggregator);
+            IUIEventSubscriptor uiSubscriptor = eventAggregator.UIEventSubscriptorFactory.Create(eventAggregator);
             using (IEventUnsubscriber unsubscriber = eventAggregator.Subscribe(uiSubscriptor))
             {
                 uiSubscriptor.AddEventHandler<Button.Handler>(button_event_handler, "Click", btn);
@@ -68,9 +66,9 @@ namespace MVPVMAbstract.Tests
         public void GetEventSubscriptionsTest()
         {
             Button btn = new Button();
-            IUIEventSubscriptor uiSubscriptor = new UIEventSubscriptor(eventAggregator);
+            IUIEventSubscriptor uiSubscriptor = eventAggregator.UIEventSubscriptorFactory.Create(eventAggregator);
             uiSubscriptor.AddEventHandler<Button.Handler>(button_event_handler, "Click", btn);
-            IUIEventSubscriptor uiSubscriptor2 = new UIEventSubscriptor(eventAggregator);
+            IUIEventSubscriptor uiSubscriptor2 = eventAggregator.UIEventSubscriptorFactory.Create(eventAggregator);
             uiSubscriptor2.AddEventHandler<Button.Handler>(button_event_handler_SecondSubscription, "Click", btn);
             Assert.AreEqual(2, eventAggregator.GetEventSubscriptions(btn, "Click").Count, "2 Subscriptions for Button Object");
             btn.OnClick();
@@ -84,8 +82,8 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void GetProcessEventSubscriptionsTest()
         {
-            IProcessEvent processEventObject = eventAggregator.ProcessEventFactory.Create<TestProcessEvent>();
-            IProcessEventSubscriptor processSubscriptor = new ProcessEventSubscriptor(eventAggregator);
+            IProcessEvent processEventObject = eventAggregator.EventFactory.Create<TestProcessEvent>();
+            IProcessEventSubscriptor processSubscriptor = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
             processSubscriptor.AddEventHandler<IProcessEvent.ProcessEventHandler>(process_event_handler, processEventObject);
             processEventObject.Publish();
             Assert.AreEqual(true, processEventDone);
@@ -97,11 +95,10 @@ namespace MVPVMAbstract.Tests
         [Test()]
         public void UnsubscribeAllTest()
         {
-            IEventSubscriptable eventAggregator = new EventAggregator(new ProcessEventFactory(), new ProcessEventSubscriptorFactory(),new UIEventSubscriptorFactory());
-            IProcessEvent processEventObject = eventAggregator.ProcessEventFactory.Create<TestProcessEvent>();
-            IEventSubscriptor processSubscriptor = new ProcessEventSubscriptor(eventAggregator);
+            IProcessEvent processEventObject = eventAggregator.EventFactory.Create<TestProcessEvent>();
+            IEventSubscriptor processSubscriptor = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
             Button btn = new Button();
-            IEventSubscriptor uiSubscriptor = new UIEventSubscriptor(eventAggregator);
+            IEventSubscriptor uiSubscriptor = eventAggregator.UIEventSubscriptorFactory.Create(eventAggregator);
             eventAggregator.Subscribe(processSubscriptor);
             eventAggregator.Subscribe(uiSubscriptor);
             Assert.IsTrue(eventAggregator.Subscriptions.Count == 2);
