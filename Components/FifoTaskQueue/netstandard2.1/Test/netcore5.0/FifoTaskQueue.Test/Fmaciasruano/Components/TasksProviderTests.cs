@@ -11,33 +11,25 @@
 
 using System;
 using System.Threading.Tasks;
-using EventAggregator.Fmaciasruano.Components;
 using FifoTaskQueue.Fmaciasruano.Components;
 using Moq;
 using NLog;
 using NUnit.Framework;
-using EventAggregatorAbstractComponents = EventAggregatorAbstract.Fmaciasruano.Components;
 using FifoTaskQueueAbstractComponents = FifoTaskQueueAbstract.Fmaciasruano.Components;
 using FifoTaskQueueComponents = FifoTaskQueue.Fmaciasruano.Components;
-using EA = EventAggregator.Fmaciasruano.Components.EventAggregator;
+using FifoTaskQueueAbstract.Fmaciasruano.Components;
 
 namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
 {
     [TestFixture()]
     public class TasksProviderTests
     {
-        private EventAggregatorAbstractComponents.IEventAggregator eventAggregator;
-        private FifoTaskQueueAbstractComponents.IActionObserver<Action> taskObserver;
+        private IActionObserver<Action> taskObserver;
 
         [SetUp]
         public void Initialize()
         {
-            eventAggregator = EA.Create(
-                ProcessEventFactory.Instance,
-                ProcessEventSubscriptorFactory.Instance,
-                UIEventSubscriptorFactory.Instance);
-
-            taskObserver = FifoTaskQueueComponents.TaskObserver<Action>.Create(eventAggregator, GetLogger());
+            taskObserver = TaskObserver<Action>.Create(GetLogger());
         }
         private ILogger GetLogger()
         {
@@ -57,7 +49,7 @@ namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
         [Test()]
         public void SubscribeTest()
         {
-            Task task = Task.Run(() => { });
+            Task<IJobRunner> task = Task.Run<IJobRunner>(() => { return JobAction<IJobRunner>.Create(); });
             TasksProvider provider = TasksProvider.Create(GetLogger()); 
             taskObserver.OnNext(task);
             IDisposable unsubscriber = provider.Subscribe(taskObserver);

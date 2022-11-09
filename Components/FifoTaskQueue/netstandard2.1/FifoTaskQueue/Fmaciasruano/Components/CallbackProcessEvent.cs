@@ -1,10 +1,20 @@
-﻿using EventAggregatorAbstract.Fmaciasruano.Components;
+﻿using FifoTaskQueueAbstract.Fmaciasruano.Components;
+using System;
+using System.Reflection;
 
 namespace FifoTaskQueue.Fmaciasruano.Components
 {
     internal class CallbackProcessEvent: ICallbackProcessEvent
     {
         public event IProcessEvent.ProcessEventHandler Event;
+        EventInfo eventInfo;
+        protected Delegate handler;
+        private CallbackProcessEvent() { }
+
+        public static ICallbackProcessEvent Create()
+        {
+            return new CallbackProcessEvent();
+        }
         public void Publish()
         {
             // Event not subscribed
@@ -19,6 +29,23 @@ namespace FifoTaskQueue.Fmaciasruano.Components
             raiseEvent?.Invoke(sender);
         }
 
-        public object Sender { get; set; }
+		public IProcessEvent AddEventHandler<TDelegate>(TDelegate handler)
+		{
+            if (eventInfo == null)
+            {
+                eventInfo = this.GetType().GetEvent("Event");
+                this.handler = handler as Delegate;
+                eventInfo.AddEventHandler(this, this.handler);
+            }
+            return this;
+        }
+
+		public void RemoveEventHandler()
+		{
+            if (!(eventInfo == null))
+                eventInfo.RemoveEventHandler(this, this.handler);
+        }
+
+		public object Sender { get; set; }
     }
 }

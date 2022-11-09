@@ -1,4 +1,4 @@
-﻿using fmacias.Components.EventAggregator;
+﻿using EventAggregatorAbstract.Fmaciasruano.Components;
 
 namespace fmacias.Components.MVPVMModule
 {

@@ -20,12 +20,12 @@ namespace FifoTaskQueue.Fmaciasruano.Components
 {
     internal class TasksProvider : ITasksProvider
     {
-        private readonly List<IObserver<Task>> observers;
+        private readonly List<IObserver<Task<IJobRunner>>> observers;
         private readonly ILogger logger;
 
         private TasksProvider(ILogger logger)
         {
-            observers = new List<IObserver<Task>>();
+            observers = new List<IObserver<Task<IJobRunner>>>();
             this.logger = logger;
         }
 
@@ -34,20 +34,40 @@ namespace FifoTaskQueue.Fmaciasruano.Components
             return new TasksProvider(logger);
         }
 
-        public IDisposable Subscribe(IObserver<Task> observer)
+        public IDisposable Subscribe(IObserver<Task<IJobRunner>> observer)
         {
             if (!HasObserverBeenRegistered(observer))
                 observers.Add(observer);
-            return Unsubscriber<Task>.Create(observers, observer);
+            return Unsubscriber<Task<IJobRunner>>.Create(observers, observer);
         }
 
         public ITaskObserver[] Subscriptions => observers.Cast<ITaskObserver>().ToArray();
 
-        public IObserver<Task>[] Observers => observers.ToArray();
+        public IObserver<Task<IJobRunner>>[] Observers => observers.ToArray();
 
-        private bool HasObserverBeenRegistered(IObserver<Task> observer)
+        private bool HasObserverBeenRegistered(IObserver<Task<IJobRunner>> observer)
         {
             return observers.Contains(observer);
+        }
+        public async Task<List<bool>> CompleteQueueObservation()
+        {
+            var performedObservableTasks = new List<bool>();
+            var observerCopy = Observers.ToList();
+
+            foreach (IObserver<Task<IJobRunner>> observer in observerCopy)
+            {
+                ///Check null because observer could be unsubscribed in between by another process.
+                if (!(observer is null))
+                {
+                    bool observed = await observeTransition((ITaskObserver)observer);
+                    performedObservableTasks.Add(observed);
+                }
+            }
+            return performedObservableTasks;
+        }
+        private async Task<bool> observeTransition(ITaskObserver observer)
+        {
+            return await observer.TaskStatusFinishedTransition;
         }
     }
 }

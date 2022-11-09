@@ -1,4 +1,4 @@
-﻿using fmacias.Components.EventAggregator;
+﻿using EventAggregatorAbstract.Fmaciasruano.Components;
 
 namespace fmacias.Components.MVPVMModule
 {
@@ -21,7 +21,9 @@ namespace fmacias.Components.MVPVMModule
 
         public IEventAggregator EventAggregator => eventAggregator;
 
-        public virtual IPresenter<TViewType> SetView(TViewType view)
+		IEventAggregator IPresenter<TViewType>.EventAggregator => throw new System.NotImplementedException();
+
+		public virtual IPresenter<TViewType> SetView(TViewType view)
         {
             this.view = view;
             return this;

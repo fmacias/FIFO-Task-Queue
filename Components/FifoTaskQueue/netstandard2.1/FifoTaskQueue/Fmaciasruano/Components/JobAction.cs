@@ -21,24 +21,21 @@ namespace FifoTaskQueue.Fmaciasruano.Components
         {
             actionWithoutParams.Invoke();
             return this;
+        }
 
-            if (IsAsycn())
+		public override IJobRunner RunAsync()
+		{
+            Task.Run(async () =>
             {
-                Task.Run<Task>(async () =>
-                {
-                    actionWithoutParams.Invoke();
-                    await defaultAsyncAction;
-                }).Unwrap().Wait();
-            }
-            else
-            {
-               
-            }
-            
+                Func<Task> func = () => {
+                    return Task.Run(() => actionWithoutParams.Invoke());
+                };
+                await func();
+            }).Wait();
             return this;
         }
 
-        public IJob<TAction> Set(TAction action)
+		public IJob<TAction> Set(TAction action)
         {
             this.action = action;
             this.actionWithoutParams = action as Action;

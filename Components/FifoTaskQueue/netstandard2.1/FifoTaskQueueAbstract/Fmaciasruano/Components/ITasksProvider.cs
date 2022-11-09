@@ -15,9 +15,10 @@ using System.Threading.Tasks;
 
 namespace FifoTaskQueueAbstract.Fmaciasruano.Components
 {
-    public interface ITasksProvider: IObservable<Task>
+    public interface ITasksProvider: IObservable<Task<IJobRunner>>
     {
         ITaskObserver[] Subscriptions { get; }
-        IObserver<Task>[] Observers { get; }
+        IObserver<Task<IJobRunner>>[] Observers { get; }
+        Task<List<bool>> CompleteQueueObservation();
     }
 }

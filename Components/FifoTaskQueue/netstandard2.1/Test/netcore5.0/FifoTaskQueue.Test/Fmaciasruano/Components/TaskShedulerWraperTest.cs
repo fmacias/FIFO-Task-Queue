@@ -49,7 +49,6 @@ namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
         [Test()]
         public void FromGUIWorker_instancesAreTheSameTest()
         {
-            SynchronizationContext synchronizationContext = new SynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
             Assert.IsInstanceOf<TaskScheduler>(Sheduler.FromGuiWorker());
         }

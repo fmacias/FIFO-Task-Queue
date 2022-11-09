@@ -11,14 +11,11 @@
 
 using System;
 using System.Threading.Tasks;
-using EventAggregator.Fmaciasruano.Components;
-using EventAggregatorAbstract.Fmaciasruano.Components;
 using FifoTaskQueue.Fmaciasruano.Components;
 using FifoTaskQueueAbstract.Fmaciasruano.Components;
 using Moq;
 using NLog;
 using NUnit.Framework;
-using EA = EventAggregator.Fmaciasruano.Components.EventAggregator;
 
 
 namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
@@ -26,17 +23,11 @@ namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
     [TestFixture()]
     public class TasksObserverTests
     {
-        private IEventAggregator eventAggregator;
         private IActionObserver<Action> taskObserver;
         [SetUp]
         public void ResetEventsOutput()
         {
-            eventAggregator = EA.Create(
-                ProcessEventFactory.Instance,
-                ProcessEventSubscriptorFactory.Instance,
-                UIEventSubscriptorFactory.Instance);
-
-            taskObserver = TaskObserver<Action>.Create(eventAggregator, GetLogger());
+            taskObserver = TaskObserver<Action>.Create(GetLogger());
         }
         private ILogger GetLogger()
         {
@@ -51,24 +42,6 @@ namespace FifoTaskQueueNC5_0.Test.Fmaciasruano.Components
         public void TasksObserverCreateTest()
         {
             Assert.IsInstanceOf<IActionObserver<Action>>(taskObserver);
-        }
-        [Test()]
-        public async Task OnCompleted_NotCompletedTest()
-        {
-            throw new NotImplementedException();
-            //bool completedTransition = await taskObserver.TaskStatusCompletedTransition;
-            //Assert.IsFalse(completedTransition);
-        }
-        [Test()]
-        public async Task OnCompleted_CompletedTest()
-        {
-            throw new NotImplementedException();
-            /*
-            Task task = Task.Run(() => { Task.Delay(2000).Wait(); });
-
-            taskObserver.OnNext(task);
-            bool completedTransition = await taskObserver.TaskStatusCompletedTransition;
-            Assert.IsTrue(completedTransition);*/
         }
     }
 }

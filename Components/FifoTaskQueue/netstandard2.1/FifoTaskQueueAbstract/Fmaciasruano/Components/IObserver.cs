@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace FifoTaskQueueAbstract.Fmaciasruano.Components
 {
-    public interface IObserver: IObserver<Task>
+    public interface IObserver: IObserver<Task<IJobRunner>>
     {
         void Subscribe(ITasksProvider provider);
         void Unsubscribe();

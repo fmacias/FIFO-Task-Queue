@@ -7,19 +7,27 @@ The primary goal of this component is to run asynchronous processes into the giv
 It is intended to be a loosely coupled component to be used within scalable applications. 
 Interfaces and the concrete implementation are located in different Modules, one with the interfaces and the other with the concrete implementation.
 
-It implements the Observer Pattern applied to the Tasks for Logging and possible monitoring issues.
+It implements the Observer Pattern applied to the Tasks for trancing issues.
 
 Once a Task observation has been finalized, a callback to the Target object is sent.
-This observer provides its processing state. Task are being disposed once the observation has been completed and is not available at the Callback of the observer. The Observer manages his own status, so that is not a problem.
+This observer provides its own processing state. Task are being disposed once the observation has been completed and 
+its observer is available at Callback. The Observer manages his own status.
 
-The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current arbitrary Synchronization Context from which was created.
+The Task processor can be crated from the GUI Synchronization context to interact with the GUI Controls and from the current 
+arbitrary Synchronization Context from which was created.
 
-Each observed Task is subordinated to the previous one, so that, canceling one, these subordinated ones will also be canceled as long as the Actions manage the CancelationToken of the Queue.
+Each observed Task is subordinated to the previous one, and will be runnned sequentally.
 
-It also observes the status of the processing Task for a tracking overview and supports task cancellation explicitly or after a given elapsed time.
+Task Cancelation is also posible, either cascade cancelation, it means canceling one, these subordinated taks will also been canceled,
+or just one task will be canceled.
 
-Once a task has been cancelled of failed, these subordinated tasks will be
-canceled before starting.
+Cancel Options: 
+	1. Cascade cancelation after elapsed time.
+	2. Last Task after elapsed time.
+	3. Task execution limiti exceded:
+	3.1 Either in Cascade Modus or not.
+	
+The state of the processing Task and its related observer is being tracked.
 
 * Source Code is maintananced at the .Net Standard 2.1 project.
 * Unit Test against .Net Core 3.1 and .Net Core 5.0 are provided.
@@ -59,7 +67,7 @@ public static TaskObserver Create(ILogger logger)
 ## FifoTaskQueue
 Signature:
 ```csharp
-public static FifoTaskQueue Create(TaskScheduler taskSheduler, ILogger logger)
+Create(TaskScheduler taskScheduler, ITasksProvider provider, ILogger logger)
 ```
 Test Creation Extracted from Test
 ```csharp
@@ -80,324 +88,471 @@ Test Creation Extracted from Test
 
 # Extracted from Test
 ```csharp
- [TestFixture()]
+     [TestFixture()]
     public class FifoTaskQueueTests
     {
-        public class SharedObject{
-            public string propertyOne { get; set; }
-        }
+        private ITaskQueue fifoTaskQueue;
 
-        private FifoTaskQueue CreateTaskQueue()
+        [SetUp]
+        public void ResetEventsOutput()
         {
-            return FifoTaskQueue.Create(
-                TaskShedulerWraper.Create().FromCurrentWorker(),
-                LogManager.GetCurrentClassLogger());
+            fifoTaskQueue = FifoTaskQueue.Fmaciasruano.Components.FifoTaskQueue.Create(
+                TaskScheduler.Current,
+                TasksProvider.Create(LogManager.GetCurrentClassLogger()),
+                LogManager.GetCurrentClassLogger()
+            );
         }
 
         [Test()]
         public void CreateTest()
         {
-            Assert.IsInstanceOf<FifoTaskQueueAbstract.ITaskQueue>(CreateTaskQueue());
-        }
-
-        [Test]
-        public void DefineTest()
-        {
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                var observer1 = queue.Define<Action>(() => { });
-                Assert.IsInstanceOf<IActionObserver<Action>>(observer1);
-                Assert.IsInstanceOf<IObserver>(observer1);
-                Assert.IsInstanceOf<ITaskObserver>(observer1);
-            }
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                var observer2 = queue.Define<Action<object>>((args) => { });
-                Assert.IsInstanceOf<IActionObserver<Action<object>>>(observer2);
-                Assert.IsInstanceOf<IObserver>(observer2);
-                Assert.IsInstanceOf<ITaskObserver>(observer2);
-            }
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                var observer2 = queue.Define<Action<int>>((args) => { });
-                Assert.IsInstanceOf<IActionObserver<Action<int>>>(observer2);
-                Assert.IsInstanceOf<IObserver>(observer2);
-                Assert.IsInstanceOf<ITaskObserver>(observer2);
-            }
-        }
-        
-        [Test]
-        public void RunTest()
-        {
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-            }
+            Assert.IsInstanceOf<ITaskQueue>(FifoTaskQueue.Fmaciasruano.Components.FifoTaskQueue.Create(
+                    TaskScheduler.Current,
+                    TasksProvider.Create(LogManager.GetCurrentClassLogger()),
+                    LogManager.GetCurrentClassLogger()
+                ));
         }
 
         [Test()]
-        public void CompleteAtSyncMethodTest()
+        public void EnqueueActionNoArgumentsTest()
         {
-            using (ITaskQueue queue = CreateTaskQueue())
+            bool done1 = false;
+            bool done2 = false;
+            IActionObserver<Action> observer1 = fifoTaskQueue.Enqueue<Action>(() =>
             {
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(500).Wait();
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(500).Wait(); 
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(500).Wait(); 
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual((sender as IObserver).Status, ObserverStatus.Completed);
-                }));
-            }
-        }
-
-        [Test()]
-        public async Task VariablesNotPassedAsReferenceToTheActions()
-        {
-            bool firstRun = false;
-            bool secondRun = false;
-            
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                queue.Run(queue.Define<Action<bool[]>>((args) =>
-                {
-                    Assert.IsTrue(args[0] == false && args[1] == false);
-                    args[0] = true;
-                    args[1] = true;
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), firstRun, secondRun);
-
-                queue.Run(queue.Define<Action<bool[]>>((args) =>
-                {
-                    Assert.IsTrue(args[0] == false && args[1] == false);
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), firstRun, secondRun);
-                bool done = await queue.Complete();
-            }
-        }
-        [Test()]
-        public async Task CompleteObserverBeforeProcessingSecondOne()
-        {
-            bool firstRun = false;
-            bool secondRun = false;
-
-            using (ITaskQueue queue = CreateTaskQueue())
-            {
-                queue.Run(queue.Define<Action<bool[]>>((args) =>
-                {
-                    Assert.IsTrue(args[0] == false && args[1] == false);
-                    args[0] = true;
-                    args[1] = true;
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), firstRun, secondRun);
+                done1 = true;
                 
-                await queue.Complete();
-                firstRun = true;
+            });
 
-                queue.Run(queue.Define<Action<bool[]>>((args) =>
-                {
-                    Assert.IsTrue(args[0] == true && args[1] == false);
-                }).OnCompleteCallback((object sender) =>
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }), firstRun, secondRun);
-                bool done = await queue.Complete();
-            }
+            IActionObserver<Action> observer2 = fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                done2 = true;
+            
+            });
+            Assert.IsFalse(object.ReferenceEquals(observer1.Runner, observer2.Runner));
+            observer1.Runner.Run();
+            observer2.Runner.Run();
+            observer1.Unsubscribe();
+            observer2.Unsubscribe();
+            Assert.IsTrue(done1);
+            Assert.IsTrue(done2);
         }
-        
+
+        [Test()]
+        public void EnqueueActionArgumentsTest()
+        {
+            IActionObserver<Action<int>> observer1 = fifoTaskQueue.Enqueue<Action<int>,int>((args) =>
+            {
+                Assert.AreEqual(1,args);
+            },1);
+
+            Assert.IsInstanceOf<IJobRunner>(observer1.Runner);
+
+            int[] arrayParams = {1, 2};
+
+            IActionObserver<Action<int[]>> observer2 = fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
+            {
+                Assert.AreEqual(1, args[0]);
+                Assert.AreEqual(2, args[1]);
+            }, arrayParams);
+            Assert.IsFalse(object.ReferenceEquals(observer1.Runner, observer2.Runner));
+            Assert.IsInstanceOf<IJobRunner>(observer1.Runner);
+            Assert.IsInstanceOf<IJobRunner>(observer2.Runner);
+            observer1.Runner.Run();
+            observer1.Unsubscribe();
+            observer2.Runner.Run();
+            observer2.Unsubscribe();
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+        }
+        [Test()]
+        public async Task Complete_SyncActionAndCallbacksAreSequentiallyInvoked()
+        {
+            bool firstActionDone = false;
+            bool firstCallback = false;
+            bool secondActionDone = false;
+            bool secondCallback = false;
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
+            {
+                firstActionDone = true;
+                Assert.AreEqual(false, secondActionDone, "Second Action not performed");
+                Assert.AreEqual(false, firstCallback, "First Callback not performed");
+             }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
+             {
+                firstCallback = true;
+                Assert.AreEqual(true, firstActionDone, "First Action performed");
+             }).Name="Queue 1";
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(1000).Wait();
+                secondActionDone = true;
+                Assert.AreEqual(true, firstActionDone, "Second Action performed first");
+
+            }).OnCompleteCallback((object sender) => {
+                Task.Delay(1000).Wait();
+                secondCallback = true;
+                Assert.AreEqual(true, firstActionDone, "First Action performed");
+                Assert.AreEqual(true, secondActionDone, "First Action performed");
+            }).Name="Queue 2";
+
+            //Dequeue can be runned after enqueue or when ever, each time runs the next queue.
+            //Does not block the thread, so that it can be run after  enqueue.
+            fifoTaskQueue.Dequeue();
+            fifoTaskQueue.Dequeue();
+            
+            // Await task finalization for the currently loaded Task in queue
+            bool alloberversHaveBeenFinalized = await fifoTaskQueue.Complete();
+
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Task.Delay(1100).Wait();
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+
+            //
+            Assert.AreEqual(true, firstActionDone);
+            Assert.AreEqual(true,firstCallback);
+            Assert.AreEqual(true, secondActionDone);
+            Assert.AreEqual(true, secondCallback);
+        }
+        [Test]
+        public void Complete_TaskThrowsException()
+		{
+            bool firstTaskCompleted = true;
+            bool secondTaskCompleted = false;
+            bool thirdTaskCanceled = false;
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
+            {
+            }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
+            {
+                Assert.IsInstanceOf<TaskObserver<Action<int[]>>>(sender);
+                TaskObserver<Action<int[]>> currentObserver = (TaskObserver<Action<int[]>>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                Assert.AreEqual(TaskStatus.RanToCompletion, currentObserver.RunningTask.Status);
+                firstTaskCompleted = true;
+            }).Name = "Queue 1";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(1000).Wait();
+
+            }).OnCompleteCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                secondTaskCompleted = true;
+            }).OnErrorCallback((object sender) => {
+            }).Name = "Queue 2";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                throw new Exception("Error happened");
+            }).OnCompleteCallback((object sender) => {
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.CompletedWithErrors, currentObserver.Status);
+                thirdTaskCanceled = true;
+            }).Name = "Queue 3";
+
+            fifoTaskQueue.Dequeue();
+
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Task.Delay(3000).Wait();
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+            Assert.AreEqual(true, firstTaskCompleted);
+            Assert.AreEqual(true, secondTaskCompleted);
+            Assert.AreEqual(true, thirdTaskCanceled);
+        }
         /// <summary>
-        /// Tasks were not finshed yet
+        /// This situation should be avoided. Run an async Task into the queue does not make sense,
+        /// but could be a real situation.
+        /// 
+        /// To solve this situation, it is posible to add a new job in between with a timeout.
+        /// 
         /// </summary>
+        /// <returns></returns>
         [Test()]
-        public void TasksNotFinishedTest()
+        public async Task Comlete_AsyncTaskRunnedInBetween()
         {
-            using (ITaskQueue queue = CreateTaskQueue())
+            bool firstActionDone = false;
+            bool secondActionDone = false;
+            bool firstAsyncOPerationDone = false;
+            bool timeOutInBetween = false;
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
             {
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(5000).Wait(); 
-
-                }).OnCompleteCallback((object sender) => 
+                Task.Run(async () =>
                 {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(2000).Wait(); 
-
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-
-                }));
-
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                    Task.Delay(2000).Wait(); 
-
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-
-                }));
-
-                Assert.IsTrue(queue.Tasks[0].IsCompleted == false &&
-                queue.Tasks[1].IsCompleted == false &&
-                queue.Tasks[2].IsCompleted == false);
-            }
-        }
-        
-        [Test()]
-        public async Task CancelFirstActionTest()
-        {
-            using (ITaskQueue queue = CreateTaskQueue())
+                    await Task.Delay(3000);
+                    firstAsyncOPerationDone = true;
+                });
+                firstActionDone = true;
+                Assert.AreEqual(false, firstAsyncOPerationDone, "Second Action performed first");
+                Assert.AreEqual(false, secondActionDone, "Second Action performed first");
+            }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
             {
-                queue.Run(queue.Define<Action>(() => 
-                {
-                    Task.Delay(5000, queue.CancellationToken).Wait();
+                Assert.AreEqual(true, firstActionDone, "First Action performed");
+            }).Name="Queue 1";
 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.CompletedWithErrors, (sender as IObserver).Status);
+            fifoTaskQueue.Dequeue();
 
-                }));
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(3500).Wait();
+                timeOutInBetween = true;
+                Assert.AreEqual(true, firstAsyncOPerationDone, "Async operation of first task performed");
+            }).Name = "Queue 2: Try to Finalize previous async task";
 
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+            fifoTaskQueue.Dequeue();
 
-                }));
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(100).Wait();
+                secondActionDone = true;
+                Assert.AreEqual(true, timeOutInBetween, "Timeout in between done");
+                Assert.AreEqual(true, firstActionDone, "Second Action performed first");
+            }).OnCompleteCallback((object sender) =>
+            {
+                Assert.AreEqual(true, secondActionDone, "Second Action performed");
+            }).Name="Queue 3";
 
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
+            fifoTaskQueue.Dequeue();
 
-                }));
-                bool done = await queue.CancelAfter(2000);
-            }
+            await fifoTaskQueue.Complete();
+
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Task.Delay(1000).Wait();
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         [Test()]
-        public async Task AddObjectToTheActions()
+        public void CancelAfter_CascadeCancelation()
         {
-            SharedObject objectsToShare1 = new SharedObject();
-            SharedObject objectsToShare2 = new SharedObject();
-            SharedObject objectsToShare3 = new SharedObject();
-            SharedObject objectsToShare4 = new SharedObject();
+            bool firstTaskCompleted = true;
+            bool secondTaskCompleted = false;
+            bool secondTaskRunned = false;
+            bool thirdTaskCanceled = false;
+            bool fourthTaskCanceled = false;
 
 
-            using (ITaskQueue queue = CreateTaskQueue())
+            fifoTaskQueue.CancelAfter(1000);
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
             {
-                queue.Run(queue.Define<Action<SharedObject>>((sharedObject) => 
-                {
-                    sharedObject.propertyOne = "value object 1";
+            }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
+            {
+                Assert.IsInstanceOf<TaskObserver<Action<int[]>>>(sender);
+                TaskObserver<Action<int[]>> currentObserver = (TaskObserver<Action<int[]>>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                Assert.AreEqual(TaskStatus.RanToCompletion, currentObserver.RunningTask.Status);
+                firstTaskCompleted = true;
+            }).Name = "Queue 1";
 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+            fifoTaskQueue.Dequeue();
 
-                }), objectsToShare1);
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(1500).Wait();
+                secondTaskRunned = true;
 
-                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
-                {
-                    sharedObjects[1].propertyOne = "value object 2";
-                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
-                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
+            }).OnCompleteCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                secondTaskCompleted = true;
+            }).OnErrorCallback((object sender) => {
+            }).Name = "Queue 2";
+            
+            fifoTaskQueue.Dequeue();
 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
+            }).OnCompleteCallback((object sender) => {
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Canceled, currentObserver.Status);
+                thirdTaskCanceled = true;
+            }).Name = "Queue 3";
 
-                }), objectsToShare1,objectsToShare2);
+            fifoTaskQueue.Dequeue();
 
-                queue.Run(queue.Define<Action<SharedObject[]>>((sharedObjects) => 
-                {
-                    sharedObjects[2].propertyOne = "value object 3";
-                    Assert.AreEqual("value object 1", sharedObjects[0].propertyOne);
-                    Assert.AreEqual("value object 2", sharedObjects[1].propertyOne);
-                    Assert.AreEqual("value object 3", sharedObjects[2].propertyOne);
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
+            }).OnCompleteCallback((object sender) => {
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Canceled, currentObserver.Status);
+                fourthTaskCanceled = true;
+            }).Name = "Queue 4";
 
-                }), objectsToShare1,objectsToShare2,objectsToShare3);
+            fifoTaskQueue.Dequeue();
 
-                bool done = await queue.Complete();
-                Assert.AreEqual("value object 1", objectsToShare1.propertyOne);
-                Assert.AreEqual("value object 2", objectsToShare2.propertyOne);
-                Assert.AreEqual("value object 3", objectsToShare3.propertyOne);
-            }
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Thread.Sleep(5000);
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+            Assert.AreEqual(true, firstTaskCompleted);
+            Assert.AreEqual(true, secondTaskRunned);
+            Assert.AreEqual(true,secondTaskCompleted,  "But, finalized as Completed.");
+            Assert.AreEqual(true, thirdTaskCanceled, "Third task canceled");
+            Assert.AreEqual(true, fourthTaskCanceled, "fourth task canceled no executed");
         }
 
         [Test()]
-        public async Task CancelSecondTaskTest()
+        public void CancelAfter_LastCancelation()
         {
-            using (ITaskQueue queue = CreateTaskQueue())
+            bool firstTaskCompleted = true;
+            bool secondTaskCompleted = false;
+            bool secondTaskRunned = false;
+            bool thirdTaskCanceled = false;
+            bool fourthTaskCompleted = false;
+
+            fifoTaskQueue.CascadeCancelation = false;
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
             {
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Completed, (sender as IObserver).Status);
-                }));
+            }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
+            {
+                Assert.IsInstanceOf<TaskObserver<Action<int[]>>>(sender);
+                TaskObserver<Action<int[]>> currentObserver = (TaskObserver<Action<int[]>>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                Assert.AreEqual(TaskStatus.RanToCompletion, currentObserver.RunningTask.Status);
+                firstTaskCompleted = true;
+            }).Name = "Queue 1";
 
-                queue.Run(queue.Define<Action>(() => 
-                {
-                    Task.Delay(5000, queue.CancellationToken).Wait();
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.CompletedWithErrors, (sender as IObserver).Status);
-                }));
+            fifoTaskQueue.Dequeue();
 
-                queue.Run(queue.Define<Action>(() => 
-                { 
-                }).OnCompleteCallback((object sender) => 
-                {
-                    Assert.AreEqual(ObserverStatus.Canceled, (sender as IObserver).Status);
-                }));
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(1500).Wait();
+                secondTaskRunned = true;
 
-                bool done = await queue.CancelAfter(2000);
-            }
+            }).OnCompleteCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                secondTaskCompleted = true;
+            }).OnErrorCallback((object sender) => {
+            }).Name = "Queue 2";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
+            }).OnCompleteCallback((object sender) => {
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Canceled, currentObserver.Status);
+                thirdTaskCanceled = true;
+            }).Name = "Queue 3";
+
+            fifoTaskQueue.Dequeue();
+            ///notice, hast to be run after dequeue. Cancel last enqueued task.
+            fifoTaskQueue.CancelAfter(1000);
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
+
+            }).OnCompleteCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                fourthTaskCompleted = true;
+            }).OnErrorCallback((object sender) => {
+            }).Name = "Queue 4";
+
+            fifoTaskQueue.Dequeue();
+
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Task.Delay(5000).Wait();
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+            Assert.AreEqual(true, firstTaskCompleted);
+            Assert.AreEqual(true, secondTaskRunned);
+            Assert.AreEqual(true, secondTaskCompleted);
+            Assert.AreEqual(true, thirdTaskCanceled, "Third task canceled");
+            Assert.AreEqual(true, fourthTaskCompleted, "fourth task canceled no executed");
+        }
+        [Test()]
+        public void CancelOneJobAfterTimeout()
+        {
+            bool firstTaskCompleted = true;
+            bool secondTaskCompleted = false;
+            bool secondTaskRunned = false;
+            bool thirdTaskCanceled = false;
+            bool fourthTaskCanceled = false;
+
+            fifoTaskQueue.CascadeCancelation = false;
+            fifoTaskQueue.JobMaximalExceutionTime = 1800;
+
+            fifoTaskQueue.Enqueue<Action<int[]>, int[]>((args) =>
+            {
+            }, new int[] { 1, 2 }).OnCompleteCallback((object sender) =>
+            {
+                Assert.IsInstanceOf<TaskObserver<Action<int[]>>>(sender);
+                TaskObserver<Action<int[]>> currentObserver = (TaskObserver<Action<int[]>>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                Assert.AreEqual(TaskStatus.RanToCompletion, currentObserver.RunningTask.Status);
+                firstTaskCompleted = true;
+            }).Name = "Queue 1";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(1500).Wait();
+                secondTaskRunned = true;
+
+            }).OnCompleteCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.Completed, currentObserver.Status);
+                secondTaskCompleted = true;
+            }).OnErrorCallback((object sender) => {
+            }).Name = "Queue 2";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
+            }).OnCompleteCallback((object sender) => {
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.ExecutionTimeExceeded, currentObserver.Status);
+                thirdTaskCanceled = true;
+            }).Name = "Queue 3";
+
+            fifoTaskQueue.Dequeue();
+
+            fifoTaskQueue.Enqueue<Action>(() =>
+            {
+                Task.Delay(2000).Wait();
+
+            }).OnCompleteCallback((object sender) => {
+                var a = 1;
+            }).OnErrorCallback((object sender) => {
+                TaskObserver<Action> currentObserver = (TaskObserver<Action>)sender;
+                Assert.AreEqual(ObserverStatus.ExecutionTimeExceeded, currentObserver.Status);
+                fourthTaskCanceled = true;
+            }).Name = "Queue 4";
+
+            fifoTaskQueue.Dequeue();
+
+            //Ensure that the Observers are being unsubscribed after callbacks
+            Thread.Sleep(5000);
+            Assert.AreEqual(0, fifoTaskQueue.Provider.Subscriptions.Length);
+            Assert.AreEqual(true, firstTaskCompleted);
+            Assert.AreEqual(true, secondTaskRunned);
+            Assert.AreEqual(true, secondTaskCompleted);
+            Assert.AreEqual(true, thirdTaskCanceled, "Third task canceled");
+            Assert.AreEqual(true, fourthTaskCanceled, "fourth task canceled no executed");
         }
     }
 ```
-> I am currently looking for a new Project. Please don't hesitate to contact me at fmaciasruano@gmail.com

@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using EventAggregatorAbstract.Fmaciasruano.Components;
 using FifoTaskQueueAbstract.Fmaciasruano.Components;
 using NLog;
-using NLog.Targets.Wrappers;
 
 namespace FifoTaskQueue.Fmaciasruano.Components
 {
@@ -18,27 +13,23 @@ namespace FifoTaskQueue.Fmaciasruano.Components
         private readonly TaskScheduler taskScheduler;
         private readonly ITasksProvider tasksProvider;
         private readonly ILogger logger;
-        private readonly IEventAggregator eventAggregator;
-        private readonly CancellationTokenSource cancellationTokenSource;
-        private IProcessEventSubscriptor onQueueFinished;
+        private CancellationTokenSource cascadeCancellationTokenSource;
+        private bool cascadeCancelation = true;
+        private Task<IJobRunner> currentJobRunner;
+        private int jobMaximalExecutionTime = TaskObserver<IJobRunner>.MAXIMAL_EXECUTION_TIME;
 
         #region Constructor
 
-        protected FifoTaskQueue(TaskScheduler taskScheduler, ITasksProvider provider, ILogger logger, IEventAggregator eventAggregator)
+        protected FifoTaskQueue(TaskScheduler taskScheduler, ITasksProvider provider, ILogger logger)
         {
             this.taskScheduler = taskScheduler;
             this.tasksProvider = provider;
             this.logger = logger;
-            this.eventAggregator = eventAggregator;
-            this.onQueueFinished = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
-            SubscriptorHelper.AddUnicEventHandler((object sender) => { }, onQueueFinished, eventAggregator, this);
-            cancellationTokenSource = new CancellationTokenSource();
         }
         
-        public static FifoTaskQueue Create(TaskScheduler taskScheduler, ITasksProvider provider, ILogger logger,
-        IEventAggregator eventAggregator)
+        public static FifoTaskQueue Create(TaskScheduler taskScheduler, ITasksProvider provider, ILogger logger)
         {
-            return new FifoTaskQueue(taskScheduler, provider, logger,eventAggregator);
+            return new FifoTaskQueue(taskScheduler, provider, logger);
         }
 
         #endregion
@@ -51,89 +42,91 @@ namespace FifoTaskQueue.Fmaciasruano.Components
         {
             return SubscribeActionJob(action, args);
         }
-        
-        public async Task<IJobRunner> Complete(params ITaskObserver[] observers)
+        public ITaskQueue Dequeue()
         {
-            ITaskObserver[] subscriptions = Provider.Subscriptions;
-            int numOfSubscriptions = subscriptions.Length;
+            if (Provider.Subscriptions.Length == 0)
+                return this;
 
-            Task<IJobRunner> previousRunner = this.Run(subscriptions[0]);
-            Task<IJobRunner> currentRunner = previousRunner;
-            await previousRunner;
-            
-            for (var x = 1; x < numOfSubscriptions; x++)
+            if (IsTaskObserverAtWork())
             {
-                currentRunner = Continue(previousRunner, subscriptions[x]);
-                await currentRunner;
-                previousRunner = currentRunner;
+                ITaskObserver observer = this.GetLastObserver();
+                Task<IJobRunner> previousRunner = this.currentJobRunner;
+                this.currentJobRunner = this.Continue(previousRunner, observer);
+                TaskObserverCallbacks(observer, this.currentJobRunner);
             }
-
-            return await currentRunner;
+            else
+            {
+                ITaskObserver observer = Provider.Subscriptions.ToList().First();
+                this.currentJobRunner = this.Start(observer);
+                TaskObserverCallbacks(observer, this.currentJobRunner);
+            }
+            return this;
         }
 
-        public async Task<ITaskQueue> CancelAfter(int miliseconds)
+        /// <summary>
+        /// Awaitable method to await processing the queue whenever is required at async methods.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> Complete()
         {
-            cancellationTokenSource.CancelAfter(miliseconds);
-            await Complete();
+            List<bool> observers = await Provider.CompleteQueueObservation();
+            return !(Array.IndexOf(observers.ToArray(), false) > -1);
+        }
+
+        public ITaskQueue CancelAfter(int miliseconds)
+        {
+            if (CascadeCancelation)
+			{
+                CancellationTokenSource.CancelAfter(miliseconds);
+			}
+			else
+			{
+                ITaskObserver observer = Provider.Subscriptions.ToList().LastOrDefault(o => o.Status == ObserverStatus.Observing);
+
+                if (observer != null)
+				{
+                    observer.CancellationTokenSource.CancelAfter(miliseconds);
+				}
+			}
+            
             return this;
         }
         
         public void CancelExecution()
         {
-            cancellationTokenSource.Cancel();
+            CancellationTokenSource.Cancel();
         }
 
-        public Task<IJobRunner> Run(ITaskObserver taskObserver)
+        public Task<IJobRunner> Start(ITaskObserver taskObserver)
         {
-           
-            Task<IJobRunner> t = Task<IJobRunner>.Factory.StartNew((obj) =>
+            CancellationTokenSource cancellationTokenSource = this.CancellationTokenSource;
+            Task<IJobRunner> taskRunner = Task<IJobRunner>.Factory.StartNew((obj) =>
             {
                 ITaskObserver observer = (ITaskObserver)obj;
-
-                if (observer.Runner.IsAsync())
-                {
-                    Task<IJobRunner> runner = Task.Run<Task<IJobRunner>>(async () =>
-                    {
-                        return await Task.Run(() =>
-                        {
-                            return taskObserver.Runner.Run();
-                        }, this.CancellationToken);
-                    }, this.CancellationToken).Unwrap();
-                    runner.Wait();
-                    return runner.Result;
-                } else
-                {
-                    return observer.Runner.Run();
-                }
-            }, taskObserver, CancellationToken, TaskCreationOptions.None, taskScheduler);
-            taskObserver.OnNext(t);
-            TaskObserverCallbacks(taskObserver, t);
-            return t;
+                return observer.Runner.Run();
+            }, taskObserver, cancellationTokenSource.Token, TaskCreationOptions.None, taskScheduler);
+            StartObservingTask(taskObserver, taskRunner, cancellationTokenSource);
+            return taskRunner;
         }
         public Task<IJobRunner> Continue(Task<IJobRunner> previousTask, ITaskObserver taskObserver)
         {
-            return previousTask.ContinueWith(
+            CancellationTokenSource cancellationTokenSource = this.CancellationTokenSource;
+            Task<IJobRunner> taskRunner = previousTask.ContinueWith(
                 (task, obj) =>
                 {
                     ITaskObserver observer = (ITaskObserver)obj;
-                    return this.Run(observer);
-                },
-                taskObserver,
-                CancellationToken, TaskContinuationOptions.AttachedToParent, taskScheduler).Unwrap();
+                    return observer.Runner.Run();
+                }, taskObserver, cancellationTokenSource.Token, TaskContinuationOptions.AttachedToParent, taskScheduler);
+            StartObservingTask(taskObserver, taskRunner, cancellationTokenSource);
+            return taskRunner;
         }
         public TaskScheduler TaskScheduler => taskScheduler;
+        public CancellationTokenSource CancellationTokenSource => CreateCancellationTokenSource();
+        public bool CascadeCancelation { get => cascadeCancelation; set => cascadeCancelation = value; }
 
-        public CancellationToken CancellationToken => GetQueueCancelationToken();
-        public ITaskQueue OnQueueFinishedCallback(IProcessEvent.ProcessEventHandler handler)
+        public void UnsubscribeAll()
         {
-            this.onQueueFinished.Unsubscribe();
-            this.onQueueFinished = eventAggregator.EventSubscriptorFactory.Create(eventAggregator);
-            SubscriptorHelper.AddUnicEventHandler(handler, onQueueFinished, eventAggregator, this);
-            return this;
-        }
-        private static void Unsubscribe(ITaskQueue o)
-        {
-            ITaskObserver[] subscriptions = o.Provider.Subscriptions;
+            ITaskObserver[] subscriptions = this.Provider.Subscriptions;
             foreach (ITaskObserver subscription in subscriptions)
             {
                 subscription.Unsubscribe();
@@ -153,63 +146,75 @@ namespace FifoTaskQueue.Fmaciasruano.Components
             return observer;
         }
         
-        private Task<IJobRunner> TaskObserverCallbacks(ITaskObserver taskObserver, Task<IJobRunner> taskRunner)
+        private Task TaskObserverCallbacks(ITaskObserver taskObserver, Task<IJobRunner> taskRunner)
         {
-            return taskRunner.ContinueWith(
-                (task, obj) =>
-                {
-                    ITaskObserver o = (ITaskObserver)obj;
-                    
-                    if (o.Runner.IsAsync())
-                        RunAsyncCallbacksSequentially(taskObserver, task);
-                    else
-                        RunCallbacks(o);
-
-                    return task;
-                },
-                taskObserver,
-                CancellationToken, TaskContinuationOptions.AttachedToParent, taskScheduler).Unwrap();
+            return taskRunner.ContinueWith((task, obj) =>{
+                ITaskObserver o = (ITaskObserver)obj;
+                RunCallbacks(o);
+                
+            },taskObserver, CancellationToken.None, TaskContinuationOptions.AttachedToParent, taskScheduler);
         }
 
-        private static void RunCallbacks(ITaskObserver observer)
+        private void RunCallbacks(ITaskObserver observer)
         {
-           
+          
             bool observerError = observer.Status == ObserverStatus.CompletedWithErrors ||
                                  observer.Status == ObserverStatus.Canceled ||
                                  observer.Status == ObserverStatus.ExecutionTimeExceeded;
-            if (observerError)
-                observer.OnError(new FifoTaskQueueWorkflowException("Error running Task. See Log. Status: " + observer.Status));
-            else
-                observer.OnCompleted();
-
-            observer.Unsubscribe();
+			try
+			{
+                if (observerError)
+                    observer.OnError(new FifoTaskQueueWorkflowException("Error running Task. See Log. Status: " + observer.Status));
+                else
+                    observer.OnCompleted();
+			}
+			catch(Exception e)
+			{
+                observer.OnError(e);
+                logger.Error(e);
+            }            
         }
 
-        private void RunAsyncCallbacksSequentially(ITaskObserver taskObserver, Task<IJobRunner> taskRunner)
+        private CancellationTokenSource CreateCancellationTokenSource()
         {
-            taskRunner.ContinueWith((task, obj) =>
-            {
-                ITaskObserver o = (ITaskObserver)obj;
-                RunCallbacks(o);
-                return task;
-            }, taskObserver, CancellationToken, TaskContinuationOptions.AttachedToParent, taskScheduler).Unwrap().Wait();
+            if (cascadeCancelation)
+			{
+                if (cascadeCancellationTokenSource == null)
+                {
+                    cascadeCancellationTokenSource = new CancellationTokenSource();
+                }
+                return cascadeCancellationTokenSource;
+			}
+			else
+			{
+                return new CancellationTokenSource();
+            }
         }
-
-        private CancellationToken GetQueueCancelationToken()
+        private bool IsTaskObserverAtWork()
         {
-            return cancellationTokenSource.Token;
+            return Provider.Subscriptions.ToList().Exists(o => o.RunningTask != null);
+        }
+        private ITaskObserver GetLastObserver()
+        {
+            return Provider.Subscriptions.ToList().Last();
         }
 
         public ITasksProvider Provider => tasksProvider;
 
-        private IActionObserver<TAction> GetSubscriber<TAction>()
-        {
-            return TaskObserver<TAction>.Create(eventAggregator, logger);
+		public int JobMaximalExceutionTime {
+            get => jobMaximalExecutionTime;
+            set => jobMaximalExecutionTime = value; 
         }
 
-        public void OnQueueFinished()
+		private IActionObserver<TAction> GetSubscriber<TAction>()
         {
-            this.onQueueFinished.Publish();
+            return TaskObserver<TAction>.Create(logger);
+        }
+        private void StartObservingTask(ITaskObserver taskObserver, Task<IJobRunner> jobRunner, CancellationTokenSource cancellationTokenSource)
+		{
+            taskObserver.OnNext(jobRunner);
+            taskObserver.CancellationTokenSource = cancellationTokenSource;
+            taskObserver.MaximumExecutionTime = JobMaximalExceutionTime;
         }
     }
 }

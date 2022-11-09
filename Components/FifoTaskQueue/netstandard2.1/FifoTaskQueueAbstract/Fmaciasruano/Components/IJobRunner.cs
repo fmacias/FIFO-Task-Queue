@@ -6,8 +6,7 @@ namespace FifoTaskQueueAbstract.Fmaciasruano.Components
     public interface IJobRunner
     {
         IJobRunner Run();
-        Action<object> StartAction { get; }
-        Action<Task, object> ContinueAction { get; }
+        IJobRunner RunAsync();
         bool IsAsync();
     }
 }

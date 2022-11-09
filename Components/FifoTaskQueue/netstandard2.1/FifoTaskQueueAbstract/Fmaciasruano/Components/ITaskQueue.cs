@@ -12,7 +12,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using EventAggregatorAbstract.Fmaciasruano.Components;
 
 namespace FifoTaskQueueAbstract.Fmaciasruano.Components
 {
@@ -20,15 +19,16 @@ namespace FifoTaskQueueAbstract.Fmaciasruano.Components
     {
         IActionObserver<TAction> Enqueue<TAction>(TAction action);
         IActionObserver<TAction> Enqueue<TAction,TArgs>(TAction action, params TArgs[] args);
-        Task<IJobRunner> Complete(params ITaskObserver[] observers);
-        Task<ITaskQueue> CancelAfter(int miliseconds);
+        ITaskQueue Dequeue();
+        Task<bool> Complete();
+        ITaskQueue CancelAfter(int miliseconds);
         void CancelExecution();
         TaskScheduler TaskScheduler { get; }
-        CancellationToken CancellationToken { get; }
-        Task<IJobRunner> Run(ITaskObserver taskObserver);
+        Task<IJobRunner> Start(ITaskObserver taskObserver);
         Task<IJobRunner> Continue(Task<IJobRunner> previousTask, ITaskObserver taskObserver);
-        ITaskQueue OnQueueFinishedCallback(IProcessEvent.ProcessEventHandler handler);
-        void OnQueueFinished();
         ITasksProvider Provider { get; }
+        void UnsubscribeAll();
+        bool CascadeCancelation { get; set; }
+        int JobMaximalExceutionTime { get; set; }
     }
 }

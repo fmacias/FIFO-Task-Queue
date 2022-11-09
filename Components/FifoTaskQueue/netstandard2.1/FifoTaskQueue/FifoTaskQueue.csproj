@@ -9,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\EventAggregator\netstandard2.1\EventAggregatorAbstract\EventAggregatorAbstract.csproj" />
     <ProjectReference Include="..\FifoTaskQueueAbstract\FifoTaskQueueAbstract.csproj" />
   </ItemGroup>
   <ItemGroup>

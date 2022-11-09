@@ -29,37 +29,25 @@ namespace FifoTaskQueue.Fmaciasruano.Components
 
             return this;
         }
+        public override IJobRunner RunAsync()
+        {
+            Task.Run(async () =>
+            {
+                Func<Task> func = () => {
+                    
+                    return Task.Run(() => {
+                        if (this.args.Length == 1)
+                            actionOneParam.Invoke(this.args[0]);
+                        else
+                            actionSeveralParams.Invoke(this.args);
+                    });
+                };
+                await func();
+            }).Wait();
 
-        private void RunOneParamAction()
-        {
-            if (IsAsycn())
-            {
-                Task.Run<Task>(async () =>
-                {
-                    actionOneParam.Invoke(this.args[0]);
-                    await defaultAsyncAction;
-                }).Unwrap().Wait();
-            }
-            else
-            {
-                actionOneParam.Invoke(this.args[0]);
-            }
+            return this;
         }
-        private void RunSeveralParamsAction()
-        {
-            if (IsAsycn())
-            {
-                Task.Run<Task>(async () =>
-                {
-                    actionOneParam.Invoke(this.args[0]);
-                    await defaultAsyncAction;
-                }).Unwrap().Wait();
-            }
-            else
-            {
-                actionOneParam.Invoke(this.args[0]);
-            }
-        }
+
         public IJob<TAction> Set(TAction action, params TArgs[] args)
         {
             this.action = action;
@@ -82,5 +70,5 @@ namespace FifoTaskQueue.Fmaciasruano.Components
 
             return actionSeveralParams.Method.IsDefined(typeof(AsyncStateMachineAttribute), false);
         }
-    }
+	}
 }
